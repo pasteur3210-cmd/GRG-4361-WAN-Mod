@@ -1,14 +1,20 @@
-# GRG-4361u WAN Setting Tool V1.0.1 (Pilot)
+# GRG-4361u WAN Setting Tool V1.0.3 (Pilot)
 
-## Intended nas0_0 target
-VLAN 160; 802.1p display 0 (POST `vprio=1`); Channel IPoE; Bridge enabled / transparent; INTERNET service; Fixed IP 192.168.2.121; gateway 192.168.2.100; mask 255.255.255.0; DNS request off; 10GE port mapping enabled. Other WAN links must not change.
+## Purpose
+Configure ONLY `nas0_0` to VLAN 160 / 802.1p 0 / IPoE / INTERNET / transparent bridge enabled / Fixed IP `192.168.2.121` / gateway `192.168.2.100` / mask `255.255.255.0` / **Multicast VLAN ID 160** / LAN_1 (10GE) enabled.
 
-## Usage
-1. Use the **Clean GitHub Upload ZIP** contents at repo root; GitHub Actions builds Windows EXE with Python 3.11.
-2. Run EXE on Windows 11; enter DUT address and credentials.
-3. Click **Read & Compare** first. Basic WAN fields from the existing JavaScript parser are shown as MATCH/DIFF; Static IP, Bridge checkbox and port mapping show UNKNOWN until a reliable firmware-specific readback is implemented.
-4. Do not use experimental Apply in production. It sends a real HTTP POST and may disconnect/alter DUT. Requires backup, tested recovery, a disposable test DUT, and operator confirmation. A device success message cannot establish complete success; no PASS is issued for unverified settings.
-5. Records are written into `records/`: cumulative Excel/CSV Master Record, execution log and JSON snapshots. Do not publish records containing equipment configuration without review.
+## Using the build
+1. Upload the Clean GitHub Upload package **contents** to a separate GitHub repository.
+2. GitHub Actions workflow `GRG4361 WAN Windows Build` compiles Windows EXE with Python 3.11.
+3. Run Read & Compare before any write.
+4. Experimental Apply & Verify requires confirmation. Use only a recovery-ready lab DUT.
+5. Verify settings by reopening the actual device Web GUI after writing.
 
-## Limitations
-The uploaded HTML contains the `ethwan` form structure, but not the router's JavaScript applyCheck() implementation or an actual successful browser POST trace. Some fields are dynamically initialized by firmware JavaScript, hence DOM markup alone cannot prove the live target. The V1.0.1 POST is a candidate only; browser-compatible serialization, `postSecurityFlag`, checkbox semantics, static IP and 10GE behavior must be validated on a recoverable test DUT. No verified rollback. No production approval.
+## Known limitations
+- `multicast_vid` field is hidden by default in some GUI states. Submission of `160` has NOT yet been proven to persist on the device.
+- Readback parser cannot verify Multicast VLAN, Static IP, bridge checkbox, or port mapping. Status remains UNKNOWN and whole-operation VERIFY_INCOMPLETE rather than PASS.
+- There is no tested automatic rollback. Device-side persistence after reboot is unverified.
+- No factory/production deployment until device-side verification.
+
+## Security
+Do not share live CSRF tokens or credentials. Program obtains a fresh token for each write.

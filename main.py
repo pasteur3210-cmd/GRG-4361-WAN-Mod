@@ -4,13 +4,13 @@ from pathlib import Path
 from threading import Thread
 from wan_tool import WanSession,TARGET
 
-root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.0.2 - Pilot');root.geometry('900x630')
+root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.0.3 - Pilot');root.geometry('900x630')
 frm=ttk.Frame(root,padding=14);frm.pack(fill='both',expand=True)
 for i,(name,default,show) in enumerate([('DUT IP','192.168.1.1',None),('Username','admin',None),('Password','', '*')]):
     ttk.Label(frm,text=name).grid(row=i,column=0,sticky='w',pady=3)
     ent=ttk.Entry(frm,width=34,show=show);ent.insert(0,default);ent.grid(row=i,column=1,sticky='w')
     globals()['entry'+str(i)]=ent
-info=ttk.Label(frm,text='Target: nas0_0 / VLAN160 / IPoE / INTERNET / Bridge / Fixed IP 192.168.2.121 / 10GE',wraplength=800)
+info=ttk.Label(frm,text='Target: nas0_0 / VLAN160 / Multicast VLAN160 / IPoE / INTERNET / Bridge / Fixed IP 192.168.2.121 / 10GE',wraplength=800)
 info.grid(row=3,column=0,columnspan=3,sticky='w',pady=12)
 text=tk.Text(frm,width=115,height=23);text.grid(row=6,column=0,columnspan=4,sticky='nsew',pady=10)
 frm.rowconfigure(6,weight=1);frm.columnconfigure(2,weight=1)

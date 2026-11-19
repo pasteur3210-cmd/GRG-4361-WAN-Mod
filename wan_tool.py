@@ -12,7 +12,7 @@ from router_oqc.post_security import post_security_flag
 
 TARGET = {'interface':'nas0_0','vlan':1,'vid':160,'vprio':1,'cmode':1,
           'br':1,'brmode':3,'napt':0,'enable':1,'ctype':2,'mtu':1500,
-          'ipMode':0,'ip':'192.168.2.121','remoteIp':'192.168.2.100',
+          'multicast_vid':160,'ipMode':0,'ip':'192.168.2.121','remoteIp':'192.168.2.100',
           'netmask':'255.255.255.0','dnsMode':0,'v6TunnelType':0,'port10ge':1}
 RECORD_FIELDS=['timestamp','router','stage','result','details','before','after']
 
@@ -24,6 +24,7 @@ def validate_target(t):
     if ipaddress.IPv4Address(t['ip']) not in ipaddress.IPv4Network(t['ip']+'/'+t['netmask'], strict=False):
         raise ValueError('IP / Subnet Mask inconsistent')
     if t['vid']<1 or t['vid']>4094: raise ValueError('VLAN out of range')
+    if not isinstance(t.get('multicast_vid'), int) or not 1 <= t['multicast_vid'] <= 4095: raise ValueError('Multicast VLAN out of range')
     if t['interface']!='nas0_0': raise ValueError('Only nas0_0 is supported')
 
 
@@ -69,7 +70,7 @@ def extended_comparison(html, target, basic):
                'status': 'MATCH' if v['match'] else 'DIFF'}
            for k,v in basic.items()}
     # 'br' enabled is distinct from brmode. Legacy JS parser cannot prove it.
-    for key in ('br','ipMode','ip','remoteIp','netmask','dnsMode','v6TunnelType','port10ge'):
+    for key in ('br','multicast_vid','ipMode','ip','remoteIp','netmask','dnsMode','v6TunnelType','port10ge'):
         out[key] = {'current': None, 'target': target[key], 'status': 'UNKNOWN'}
     return out
 
@@ -120,7 +121,7 @@ def build_payload(t,token,source_html):
         raise ValueError('Invalid CSRF token format')
     # Refuse to write if the captured browser checksum is not reproducible.
     browser_payload_safety_check()
-    update={'vid':str(t['vid']),'vprio':str(t['vprio']),
+    update={'vid':str(t['vid']),'vprio':str(t['vprio']), 'multicast_vid':str(t['multicast_vid']),
         'adslConnectionMode':str(t['cmode']),'brmode':str(t['brmode']),
         'ctype':str(t['ctype']),'ctypeForBridge':str(t['ctype']),
         'mtu':str(t['mtu']),'ipMode':str(t['ipMode']),
@@ -210,7 +211,7 @@ class WanSession:
             unchanged=all(after.get(name)==snapshot for name,snapshot in self.snapshot_before.items() if name!='nas0_0')
             basic=extended_comparison(new_html,TARGET,compare_basic(ensure_target_device(new_configs),TARGET))
             basic_ok=all(v['status']=='MATCH' for v in basic.values() if v['status']!='UNKNOWN')
-            missing='Static IP / bridge-checkbox / port mapping readback not proven from existing parser'
+            missing='Multicast VLAN / Static IP / bridge-checkbox / port mapping readback not proven from existing parser'
             # Never report PASS until all target settings can be verified.
             result='VERIFY_INCOMPLETE' if basic_ok and unchanged else 'FAIL'
             if not unchanged: missing='Non-target WAN settings changed'

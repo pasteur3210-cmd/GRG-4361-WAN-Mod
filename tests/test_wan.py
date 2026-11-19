@@ -41,3 +41,26 @@ def test_unknown_readback_not_pass():
     assert result['ip']['status']=='UNKNOWN'
     assert result['br']['status']=='UNKNOWN'
     assert result['port10ge']['status']=='UNKNOWN'
+
+
+def test_multicast_vlan_writing():
+    from wan_tool import BROWSER_PAYLOAD, browser_payload_safety_check
+    from router_oqc.post_security import post_security_flag
+    assert ('multicast_vid', '') in BROWSER_PAYLOAD  # historical capture stays immutable
+    browser_payload_safety_check()
+    payload = build_payload(TARGET, 'a'*32, '')
+    assert [v for k,v in payload if k=='multicast_vid'] == ['160']
+    bare = [(k,v) for k,v in payload if k not in ('postSecurityFlag','csrftoken')]
+    assert [v for k,v in payload if k=='postSecurityFlag'] == [str(post_security_flag(bare))]
+    assert [v for k,v in payload if k=='chkpt'] == ['', '', '', '', 'on']
+
+def test_multicast_vlan_unknown_in_readback():
+    c=WanConfig(0,'nas0_0',2,1,3,0,1,160,1,0,1,1500,1492,1)
+    r=extended_comparison('', TARGET, compare_basic(c,TARGET))
+    assert r['multicast_vid']['status']=='UNKNOWN'
+
+def test_multicast_vlan_range():
+    for bad in [0,4096,-1,'160']:
+        d=TARGET.copy();d['multicast_vid']=bad
+        with pytest.raises(ValueError,match='Multicast VLAN'):
+            validate_target(d)
