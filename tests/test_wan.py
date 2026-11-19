@@ -4,18 +4,27 @@ from wan_tool import TARGET,validate_target,build_payload,compare_basic,extended
 from router_oqc.wan_config_parser import WanConfig
 
 def test_target_valid():validate_target(TARGET)
-def test_priority_encoding():
-    payload=build_payload(TARGET,'a'*32,'')
-    assert ('vprio','1') in payload
-    assert ('ipMode','0') in payload
-    assert ('ip','192.168.2.121') in payload
-    assert ('netmask','255.255.255.0') in payload
-    assert len([1 for k,v in payload if k=='chkpt'])==5
-    assert ('chkpt','on') in payload
-    assert len([1 for k,v in payload if k=='ipMode'])==1
-    assert len([1 for k,v in payload if k=='ip'])==1
-    assert len([1 for k,v in payload if k=='netmask'])==1
-    assert payload[-1]==('csrftoken','a'*32)
+def test_browser_fields_order():
+    from wan_tool import BROWSER_PAYLOAD
+    assert ('ctypeForBridge','2') in BROWSER_PAYLOAD
+    assert ('lst','nas0_0') in BROWSER_PAYLOAD
+    assert ('itfGroup','16') in BROWSER_PAYLOAD
+    assert ('qosEnabled','ON') in BROWSER_PAYLOAD
+    ports=[v for k,v in BROWSER_PAYLOAD if k=='chkpt']
+    assert ports==['','','','','on']
+    assert ('ipMode','0') in BROWSER_PAYLOAD
+    assert ('netmask','255.255.255.0') in BROWSER_PAYLOAD
+
+def test_checksum_gate():
+    from wan_tool import browser_payload_safety_check, BROWSER_RECORDED_FLAG, BROWSER_PAYLOAD
+    from router_oqc.post_security import post_security_flag
+    if post_security_flag(BROWSER_PAYLOAD)!=BROWSER_RECORDED_FLAG:
+        with pytest.raises(ValueError,match='checksum not verified'):
+            build_payload(TARGET,'a'*32,'')
+    else:
+        assert browser_payload_safety_check()
+        assert build_payload(TARGET,'a'*32,'')[-1]==('csrftoken','a'*32)
+
 def test_invalid_subnet():
     d=TARGET.copy();d['netmask']='255.99.0.0'
     with pytest.raises(Exception):validate_target(d)

@@ -74,55 +74,63 @@ def extended_comparison(html, target, basic):
     return out
 
 
-def build_payload(t,token,source_html):
-    """Build a candidate POST; NOT a verified browser-equivalent submission.
+# Browser-captured successful target submission (2026-11-19).  Empty fields
+# are retained. Tokens/flags excluded: generated per transaction.
+# Order matters, especially the five chkpt entries.
+BROWSER_PAYLOAD = [
+    ('v6TunnelRv4IP',''),('lkname','0'),('vlan','ON'),('vid','160'),('vprio','1'),
+    ('multicast_vid',''),('adslConnectionMode','1'),('br','ON'),('brmode','3'),
+    ('chEnable','1'),('ctype','2'),('ctypeForBridge','2'),('mtu','1500'),
+    ('mtu_pppoe','1500'),('maccloneaddr',''),('droute','0'),('IpProtocolType','1'),
+    ('auth','0'),('acName',''),('serviceName',''),('ipMode','0'),
+    ('ip','192.168.2.121'),('remoteIp','192.168.2.100'),
+    ('netmask','255.255.255.0'),('dns1',''),('dns2',''),('opt60_val',''),
+    ('iaid','0'),('duid_type','1'),('duid_ent_num','0'),('duid_id',''),
+    ('manufacturer',''),('product_class',''),('model_name',''),('serial_num',''),
+    ('v6TunnelType','0'),('SixrdBRv4IP',''),('SixrdIPv4MaskLen',''),
+    ('SixrdPrefix',''),('SixrdPrefixLen',''),('Ipv6Dns16rd',''),('Ipv6Dns26rd',''),
+    ('Ipv6Addr6in4',''),('Ipv6PrefixLen6in4',''),('Ipv6Gateway6in4',''),
+    ('v6TunnelRv4IP6in4',''),('dnsV6Mode6in4','0'),('Ipv6Dns16in4',''),
+    ('Ipv6Dns26in4',''),('v6TunnelRv4IP6to4',''),('Ipv6Dns16to4',''),
+    ('Ipv6Dns26to4',''),('AddrMode','1'),('Ipv6Addr',''),
+    ('Ipv6PrefixLen',''),('Ipv6Gateway',''),('iapd','ON'),('dnsV6Mode','1'),
+    ('napt_v6','0'),('s4over6Type','0'),('dslite_aftr_hostname',''),
+    ('chkpt',''),('chkpt',''),('chkpt',''),('chkpt',''),('chkpt','on'),
+    ('submit-url','/admin/multi_wan_generic.asp'),('lst','nas0_0'),
+    ('encodePppUserName',''),('encodePppPassword',''),('qosEnabled','ON'),
+    ('apply','Apply Changes'),('itfGroup','16')]
+BROWSER_RECORDED_FLAG = 46002
 
-    Preserve repeated chkpt parameters and prevent duplicate scalar keys.
-    Never include disabled/irrelevant DHCP/PPP fields from the legacy bridge
-    fixture without firmware confirmation. External live writing is still gated.
+def browser_payload_safety_check():
+    """Validate recorded form and flag generation before writing.
+
+    Explicitly fail closed if our checksum algorithm cannot reproduce the
+    captured legitimate browser submission. Never send a guessed checksum.
     """
+    actual=post_security_flag(BROWSER_PAYLOAD)
+    if actual!=BROWSER_RECORDED_FLAG:
+        raise ValueError('Security checksum not verified: generated %s, browser %s. '
+            'Write disabled until the algorithm/encoding is confirmed.' %
+            (actual,BROWSER_RECORDED_FLAG))
+    return True
+
+def build_payload(t,token,source_html):
     validate_target(t)
     if not re.fullmatch(r'[A-Za-z0-9]{16,128}',token):
         raise ValueError('Invalid CSRF token format')
-    # Fields modeled after the supplied ethwan form, in DOM order.
-    fields=[
-        ('v6TunnelRv4IP',''),('lkname','0'),('vlan','ON'),
-        ('vid',str(t['vid'])),('vprio',str(t['vprio'])),
-        ('adslConnectionMode',str(t['cmode'])),('br','ON'),
-        ('brmode',str(t['brmode'])),('chEnable',str(t['enable'])),
-        ('ctype',str(t['ctype'])),('mtu',str(t['mtu'])),
-        ('igmpEnabled','OFF'), # placeholder: removed below (unchecked HTML checkbox)
-        ('ipMode',str(t['ipMode'])),('ip',t['ip']),
-        ('remoteIp',t['remoteIp']),('netmask',t['netmask']),
-        ('dnsMode',str(t['dnsMode'])),('iaid','0'),('duid_type','1'),
-        ('v6TunnelType',str(t['v6TunnelType'])),
-        ('chkpt',''),('chkpt',''),('chkpt',''),('chkpt',''),
-        ('chkpt','ON'),('submit-url','/admin/multi_wan_generic.asp'),
-        ('lst','ppp0_nas0_0'),('encodePppUserName',''),
-        ('encodePppPassword',''),('qosEnabled',''),
-        ('apply','Apply Changes'),('itfGroup','0')
-    ]
-    fields=[(k,v) for k,v in fields if k!='igmpEnabled']
-    # Checkbox value for last chkpt has no value= in HTML: browser default is 'on'.
-    fields=[(k,('on' if i==4 else v)) if k=='chkpt' else (k,v)
-            for i,(k,v) in _enumerate_chkpt(fields)]
-    repeated={'chkpt'}
-    names=[k for k,_ in fields if k not in repeated]
-    if len(names)!=len(set(names)):
-        raise ValueError('Duplicate scalar POST field detected')
-    flag=post_security_flag(fields)
-    return fields+[('postSecurityFlag',str(flag)),('csrftoken',token)]
-
-
-def _enumerate_chkpt(fields):
-    index=0
-    for k,v in fields:
-        if k=='chkpt':
-            yield index,(k,v)
-            index+=1
-        else:
-            yield -1,(k,v)
-
+    # Refuse to write if the captured browser checksum is not reproducible.
+    browser_payload_safety_check()
+    update={'vid':str(t['vid']),'vprio':str(t['vprio']),
+        'adslConnectionMode':str(t['cmode']),'brmode':str(t['brmode']),
+        'ctype':str(t['ctype']),'ctypeForBridge':str(t['ctype']),
+        'mtu':str(t['mtu']),'ipMode':str(t['ipMode']),
+        'ip':t['ip'],'remoteIp':t['remoteIp'],'netmask':t['netmask'],
+        'v6TunnelType':str(t['v6TunnelType'])}
+    fields=[(k,update.get(k,v)) for k,v in BROWSER_PAYLOAD]
+    if len([1 for k,_ in fields if k=='chkpt'])!=5:raise ValueError('Invalid port mapping layout')
+    names=[k for k,_ in fields if k!='chkpt']
+    if len(names)!=len(set(names)):raise ValueError('Duplicate scalar POST field')
+    return fields+[('postSecurityFlag',str(post_security_flag(fields))),('csrftoken',token)]
 
 def ensure_target_device(configs):
     candidates=[x for x in configs if x.name=='nas0_0']
@@ -185,7 +193,7 @@ class WanSession:
         configs,token,html=read_wan(self.client)
         if {c.name:config_values(c) for c in configs}!=self.snapshot_before:
             raise ValueError('WAN settings changed since snapshot. Read again.')
-        fields=build_payload(TARGET,token,html)
+        fields=build_payload(TARGET,token,html)  # fails closed until checksum is verified
         # Important: requests accepts a tuple list; its fallback raw transport uses urlencode too.
         # Store only redacted payload to aid verification without secrets.
         sanitized=[(k,'[REDACTED]' if k in ('csrftoken','postSecurityFlag') else v) for k,v in fields]

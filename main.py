@@ -4,7 +4,7 @@ from pathlib import Path
 from threading import Thread
 from wan_tool import WanSession,TARGET
 
-root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.0.1 - Pilot');root.geometry('900x630')
+root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.0.2 - Pilot');root.geometry('900x630')
 frm=ttk.Frame(root,padding=14);frm.pack(fill='both',expand=True)
 for i,(name,default,show) in enumerate([('DUT IP','192.168.1.1',None),('Username','admin',None),('Password','', '*')]):
     ttk.Label(frm,text=name).grid(row=i,column=0,sticky='w',pady=3)
