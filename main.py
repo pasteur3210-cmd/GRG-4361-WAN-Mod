@@ -4,7 +4,7 @@ from pathlib import Path
 from threading import Thread
 from wan_tool import WanSession,TARGET
 
-root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.0.0 - Pilot');root.geometry('900x630')
+root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.0.1 - Pilot');root.geometry('900x630')
 frm=ttk.Frame(root,padding=14);frm.pack(fill='both',expand=True)
 for i,(name,default,show) in enumerate([('DUT IP','192.168.1.1',None),('Username','admin',None),('Password','', '*')]):
     ttk.Label(frm,text=name).grid(row=i,column=0,sticky='w',pady=3)
@@ -31,8 +31,8 @@ def read():
         state['session'].close()
     s=WanSession(entry0.get(),entry1.get(),entry2.get());state['session']=s
     result=s.read();log('READ OK: nas0_0')
-    for k,v in result.items():log(f"{k:18s} current={str(v['current']):14s} target={v['target']}  {'MATCH' if v['match'] else 'DIFF'}")
-    log('Additional IP/port fields are NOT fully verified by legacy parser.')
+    for k,v in result.items():log(f"{k:18s} current={str(v['current']):14s} target={v['target']}  {v['status']}")
+    log('UNKNOWN fields require a proven device readback method before PASS.')
 def apply():
     if not state['session'] or not state['session'].before_wan:
         messagebox.showwarning('Read first','Please use Read & Compare first.');return
@@ -46,7 +46,7 @@ def apply():
         def task():
             result,detail,basic=state['session'].apply_experimental(x)
             log('APPLY RESULT: '+result+' — '+detail)
-            for k,v in basic.items():log(f"{k}: {'MATCH' if v['match'] else 'FAIL'}")
+            for k,v in basic.items():log(f"{k}: {v['status']}")
         run(task)
     ttk.Button(win,text='Confirm experimental write',command=confirm).pack(pady=12)
 readbtn=ttk.Button(frm,text='1. Read & Compare',command=lambda:run(read));readbtn.grid(row=4,column=0,pady=4,sticky='w')

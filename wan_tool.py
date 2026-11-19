@@ -59,41 +59,69 @@ def find_live_static_values(html):
     return out
 
 
+def extended_comparison(html, target, basic):
+    """Conservative observation. Unknown fields MUST NOT be marked MATCH.
+
+    WAN UI initializes form controls in JavaScript, so the static HTML alone
+    cannot establish the selected link's actual IP or port map values.
+    """
+    out = {k: {'current': v['current'], 'target': v['target'],
+               'status': 'MATCH' if v['match'] else 'DIFF'}
+           for k,v in basic.items()}
+    # 'br' enabled is distinct from brmode. Legacy JS parser cannot prove it.
+    for key in ('br','ipMode','ip','remoteIp','netmask','dnsMode','v6TunnelType','port10ge'):
+        out[key] = {'current': None, 'target': target[key], 'status': 'UNKNOWN'}
+    return out
+
+
 def build_payload(t,token,source_html):
+    """Build a candidate POST; NOT a verified browser-equivalent submission.
+
+    Preserve repeated chkpt parameters and prevent duplicate scalar keys.
+    Never include disabled/irrelevant DHCP/PPP fields from the legacy bridge
+    fixture without firmware confirmation. External live writing is still gated.
+    """
     validate_target(t)
-    if not re.fullmatch(r'[A-Za-z0-9]{16,128}',token): raise ValueError('Invalid/expired CSRF token format')
-    # Starting from the legacy parameter ordering to preserve postSecurityFlag algorithm.
-    # This is an engineering candidate, not a confirmed packet capture.
-    old=dict(BRIDGE_FIELDS)
-    old.update({'lkname':'0','vid':str(t['vid']),'vprio':str(t['vprio']),
-        'adslConnectionMode':'1','brmode':'3','chEnable':'1','ctype':'2',
-        'ctypeForBridge':'2','mtu':'1500','IpProtocolType':'1',
-        'dnsMode':'0','v6TunnelType':'0','multicast_vid':'',
-        'ipMode':'0','ip':t['ip'],'remoteIp':t['remoteIp'],
-        'netmask':t['netmask'],'lst':'ppp0_nas0_0'})
-    fields=[]
-    for k,v in BRIDGE_FIELDS:
-        if k=='apply': continue
-        fields.append((k,old[k]))
-    # Checkbox fields absent when unchecked, and included when checked.
-    # chkpt has four hidden markers before the single 10GE checkbox in user HTML.
-    fields[2:2]=[('vlan','ON')]
-    # Remove any duplicate inherited checkbox fields before serializing.
-    seen_vlan=False
-    normalized=[]
-    for k,v in fields:
-        if k=='vlan':
-            if seen_vlan:continue
-            seen_vlan=True
-        normalized.append((k,v))
-    fields=normalized
-    fields.extend([('br','ON'),('ipMode','0'),('ip',t['ip']),
-                   ('remoteIp',t['remoteIp']),('netmask',t['netmask'])])
-    fields.extend([('chkpt',''),('chkpt',''),('chkpt',''),('chkpt',''),('chkpt','ON')])
-    fields.append(('apply','Apply Changes'))
-    # Browser behavior for postSecurityFlag may include/exclude disabled inputs.
+    if not re.fullmatch(r'[A-Za-z0-9]{16,128}',token):
+        raise ValueError('Invalid CSRF token format')
+    # Fields modeled after the supplied ethwan form, in DOM order.
+    fields=[
+        ('v6TunnelRv4IP',''),('lkname','0'),('vlan','ON'),
+        ('vid',str(t['vid'])),('vprio',str(t['vprio'])),
+        ('adslConnectionMode',str(t['cmode'])),('br','ON'),
+        ('brmode',str(t['brmode'])),('chEnable',str(t['enable'])),
+        ('ctype',str(t['ctype'])),('mtu',str(t['mtu'])),
+        ('igmpEnabled','OFF'), # placeholder: removed below (unchecked HTML checkbox)
+        ('ipMode',str(t['ipMode'])),('ip',t['ip']),
+        ('remoteIp',t['remoteIp']),('netmask',t['netmask']),
+        ('dnsMode',str(t['dnsMode'])),('iaid','0'),('duid_type','1'),
+        ('v6TunnelType',str(t['v6TunnelType'])),
+        ('chkpt',''),('chkpt',''),('chkpt',''),('chkpt',''),
+        ('chkpt','ON'),('submit-url','/admin/multi_wan_generic.asp'),
+        ('lst','ppp0_nas0_0'),('encodePppUserName',''),
+        ('encodePppPassword',''),('qosEnabled',''),
+        ('apply','Apply Changes'),('itfGroup','0')
+    ]
+    fields=[(k,v) for k,v in fields if k!='igmpEnabled']
+    # Checkbox value for last chkpt has no value= in HTML: browser default is 'on'.
+    fields=[(k,('on' if i==4 else v)) if k=='chkpt' else (k,v)
+            for i,(k,v) in _enumerate_chkpt(fields)]
+    repeated={'chkpt'}
+    names=[k for k,_ in fields if k not in repeated]
+    if len(names)!=len(set(names)):
+        raise ValueError('Duplicate scalar POST field detected')
     flag=post_security_flag(fields)
     return fields+[('postSecurityFlag',str(flag)),('csrftoken',token)]
+
+
+def _enumerate_chkpt(fields):
+    index=0
+    for k,v in fields:
+        if k=='chkpt':
+            yield index,(k,v)
+            index+=1
+        else:
+            yield -1,(k,v)
 
 
 def ensure_target_device(configs):
@@ -145,14 +173,14 @@ class WanSession:
         self.snapshot_before={c.name:config_values(c) for c in configs}
         # Never log active CSRF tokens or credentials.
         (self.output_dir/'before.json').write_text(json.dumps(self.snapshot_before,indent=2,ensure_ascii=False),encoding='utf-8')
-        self.comparison=compare_basic(wan,TARGET)
+        self.comparison=extended_comparison(html,TARGET,compare_basic(wan,TARGET))
         write_record(self.output_dir,self.host,'READ','OK','Read-only snapshot',self.snapshot_before)
+        (self.output_dir/'read_comparison.json').write_text(json.dumps(self.comparison,indent=2,ensure_ascii=False),encoding='utf-8')
         return self.comparison
 
     def apply_experimental(self,confirmation):
         if confirmation!='APPLY nas0_0':raise ValueError('Explicit confirmation required')
         if not self.before_wan or not self.html:raise ValueError('Read WAN first')
-        fields=build_payload(TARGET,self.token,self.html)
         # re-read before modification and prohibit changes since initial snapshot
         configs,token,html=read_wan(self.client)
         if {c.name:config_values(c) for c in configs}!=self.snapshot_before:
@@ -172,8 +200,8 @@ class WanSession:
             new_configs,new_token,new_html=read_wan(self.client)
             after={c.name:config_values(c) for c in new_configs}
             unchanged=all(after.get(name)==snapshot for name,snapshot in self.snapshot_before.items() if name!='nas0_0')
-            basic=compare_basic(ensure_target_device(new_configs),TARGET)
-            basic_ok=all(v['match'] for v in basic.values())
+            basic=extended_comparison(new_html,TARGET,compare_basic(ensure_target_device(new_configs),TARGET))
+            basic_ok=all(v['status']=='MATCH' for v in basic.values() if v['status']!='UNKNOWN')
             missing='Static IP / bridge-checkbox / port mapping readback not proven from existing parser'
             # Never report PASS until all target settings can be verified.
             result='VERIFY_INCOMPLETE' if basic_ok and unchanged else 'FAIL'
@@ -181,6 +209,7 @@ class WanSession:
             if not basic_ok: missing='Basic WAN setting mismatch'
             write_record(self.output_dir,self.host,'APPLY',result,missing,self.snapshot_before,after)
             (self.output_dir/'after.json').write_text(json.dumps(after,indent=2),encoding='utf-8')
+            (self.output_dir/'after_comparison.json').write_text(json.dumps(basic,indent=2,ensure_ascii=False),encoding='utf-8')
             return result,missing,basic
         except Exception as exc:
             write_record(self.output_dir,self.host,'APPLY','FAIL',f'{type(exc).__name__}: {exc}',self.snapshot_before)

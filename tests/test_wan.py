@@ -1,6 +1,6 @@
 from pathlib import Path
 import pytest
-from wan_tool import TARGET,validate_target,build_payload,compare_basic
+from wan_tool import TARGET,validate_target,build_payload,compare_basic,extended_comparison
 from router_oqc.wan_config_parser import WanConfig
 
 def test_target_valid():validate_target(TARGET)
@@ -11,6 +11,10 @@ def test_priority_encoding():
     assert ('ip','192.168.2.121') in payload
     assert ('netmask','255.255.255.0') in payload
     assert len([1 for k,v in payload if k=='chkpt'])==5
+    assert ('chkpt','on') in payload
+    assert len([1 for k,v in payload if k=='ipMode'])==1
+    assert len([1 for k,v in payload if k=='ip'])==1
+    assert len([1 for k,v in payload if k=='netmask'])==1
     assert payload[-1]==('csrftoken','a'*32)
 def test_invalid_subnet():
     d=TARGET.copy();d['netmask']='255.99.0.0'
@@ -20,3 +24,11 @@ def test_basic_comparison():
     v=compare_basic(c,TARGET)
     assert not v['vid']['match']
     assert v['cmode']['match']
+
+def test_unknown_readback_not_pass():
+    c=WanConfig(0,'nas0_0',2,1,3,0,1,160,1,0,1,1500,1492,1)
+    result=extended_comparison('',TARGET,compare_basic(c,TARGET))
+    assert result['vid']['status']=='MATCH'
+    assert result['ip']['status']=='UNKNOWN'
+    assert result['br']['status']=='UNKNOWN'
+    assert result['port10ge']['status']=='UNKNOWN'
