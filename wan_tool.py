@@ -5,7 +5,7 @@ from pathlib import Path
 from urllib.parse import urljoin
 from html import escape
 from bs4 import BeautifulSoup
-import csv, json, ipaddress, re, time
+import csv, json, ipaddress, re, time, os, uuid, contextlib
 from router_oqc.client import RouterClient, RouterError
 from router_oqc.wan_config_client import read_wan, BRIDGE_FIELDS
 from router_oqc.post_security import post_security_flag
@@ -29,11 +29,17 @@ def validate_target(t):
 
 
 def config_values(conf):
+    # Source of truth: DUT GET /admin/multi_wan_generic.asp, links[] initialization.
+    # Never derive the current settings from target or submitted POST.
     return {'interface':conf.name, 'vlan':conf.vlan, 'vid':conf.vid,
-        'vprio':conf.vprio,'cmode':conf.cmode, 'brmode':conf.brmode,
+        'vprio':conf.vprio,'cmode':conf.cmode,'brmode':conf.brmode,
         'napt':conf.napt, 'enable':conf.enable,'ctype':conf.applicationtype,
-        'mtu':conf.mtu}
-
+        'mtu':conf.mtu, 'br':int(conf.cmode != 0 and conf.brmode not in (0,2)),
+        'multicast_vid':conf.mVid, 'ipMode':conf.ipDhcp,
+        'ip':conf.ipAddr, 'remoteIp':conf.remoteIpAddr,
+        'netmask':conf.netMask, 'dnsMode':conf.dnsMode,
+        'v6TunnelType':conf.v6TunnelType,
+        'port10ge':int(bool(conf.itfGroup & 16))}
 
 def compare_basic(conf,target):
     curr=config_values(conf)
@@ -75,17 +81,16 @@ def comparison_summary(comparison):
 
 
 def extended_comparison(html, target, basic):
-    """Conservative observation. Unknown fields MUST NOT be marked MATCH.
-
-    WAN UI initializes form controls in JavaScript, so the static HTML alone
-    cannot establish the selected link's actual IP or port map values.
-    """
-    out = {k: {'current': v['current'], 'target': v['target'],
-               'status': 'MATCH' if v['match'] else 'DIFF'}
-           for k,v in basic.items()}
-    # 'br' enabled is distinct from brmode. Legacy JS parser cannot prove it.
-    for key in ('br','multicast_vid','ipMode','ip','remoteIp','netmask','dnsMode','v6TunnelType','port10ge'):
-        out[key] = {'current': None, 'target': target[key], 'status': 'UNKNOWN'}
+    # The parser now reads all 19 fields directly from DUT links[] data.
+    # Missing values must remain UNKNOWN, never be inferred from submitted values.
+    out={}
+    for key in target:
+        if key not in basic:
+            out[key]={'current':None,'target':target[key],'status':'UNKNOWN'}
+        else:
+            val=basic[key]['current']
+            out[key]={'current':val,'target':target[key],
+                      'status':'UNKNOWN' if val is None else ('MATCH' if val==target[key] else 'DIFF')}
     return out
 
 
@@ -180,10 +185,13 @@ def write_record(folder,router,stage,result,details,before=None,after=None):
 
 
 class WanSession:
-    def __init__(self,host,username,password,output_dir='records'):
+    def __init__(self,host,username,password,output_dir='records',target_ip='192.168.2.121',mac='',gpon_sn='',operator=''):
         self.host=host.strip();self.client=RouterClient(self.host,protocol='http',timeout=12)
         self.username=username;self.password=password;self.output_dir=Path(output_dir)
         self.before=None;self.token=None;self.html=None;self.before_wan=None
+        self.target=dict(TARGET); self.target['ip']=target_ip
+        self.mac=normalize_mac(mac) if mac else '';self.gpon_sn=re.sub(r'[^0-9A-Za-z]','',gpon_sn).upper() if gpon_sn else ''
+        self.operator=operator.strip();self.lease_id=None
 
     def close(self):self.client.close()
 
@@ -196,7 +204,7 @@ class WanSession:
         self.snapshot_before={c.name:config_values(c) for c in configs}
         # Never log active CSRF tokens or credentials.
         (self.output_dir/'before.json').write_text(json.dumps(self.snapshot_before,indent=2,ensure_ascii=False),encoding='utf-8')
-        self.comparison=extended_comparison(html,TARGET,compare_basic(wan,TARGET))
+        self.comparison=extended_comparison(html,self.target,compare_basic(wan,self.target))
         read_result, counts = comparison_summary(self.comparison)
         write_record(self.output_dir,self.host,'READ',read_result,
                      'Read/Compare: '+str(counts),self.snapshot_before)
@@ -206,11 +214,13 @@ class WanSession:
     def apply_experimental(self,confirmation):
         if confirmation!='APPLY nas0_0':raise ValueError('Explicit confirmation required')
         if not self.before_wan or not self.html:raise ValueError('Read WAN first')
+        # Reserve this IP atomically for this identity before any device write.
         # re-read before modification and prohibit changes since initial snapshot
         configs,token,html=read_wan(self.client)
         if {c.name:config_values(c) for c in configs}!=self.snapshot_before:
             raise ValueError('WAN settings changed since snapshot. Read again.')
-        fields=build_payload(TARGET,token,html)  # fails closed until checksum is verified
+        fields=build_payload(self.target,token,html)  # fails closed until checksum is verified
+        reserve_ip(self.output_dir,self.mac,self.gpon_sn,self.target['ip'],self.host,self.operator)
         # Important: requests accepts a tuple list; its fallback raw transport uses urlencode too.
         # Store only redacted payload to aid verification without secrets.
         sanitized=[(k,'[REDACTED]' if k in ('csrftoken','postSecurityFlag') else v) for k,v in fields]
@@ -225,19 +235,21 @@ class WanSession:
             new_configs,new_token,new_html=read_wan(self.client)
             after={c.name:config_values(c) for c in new_configs}
             unchanged=all(after.get(name)==snapshot for name,snapshot in self.snapshot_before.items() if name!='nas0_0')
-            basic=extended_comparison(new_html,TARGET,compare_basic(ensure_target_device(new_configs),TARGET))
+            basic=extended_comparison(new_html,self.target,compare_basic(ensure_target_device(new_configs),self.target))
             basic_ok=all(v['status']=='MATCH' for v in basic.values() if v['status']!='UNKNOWN')
-            missing='Multicast VLAN / Static IP / bridge-checkbox / port mapping readback not proven from existing parser'
+            missing='All target fields must match DUT readback'
             # Never report PASS until all target settings can be verified.
-            result='VERIFY_INCOMPLETE' if basic_ok and unchanged else 'FAIL'
+            result='OK' if basic_ok and unchanged and all(v['status']=='MATCH' for v in basic.values()) else ('FAIL' if (not basic_ok or not unchanged) else 'VERIFY_INCOMPLETE')
             if not unchanged: missing='Non-target WAN settings changed'
             if not basic_ok: missing='Basic WAN setting mismatch'
             write_record(self.output_dir,self.host,'APPLY',result,missing,self.snapshot_before,after)
             (self.output_dir/'after.json').write_text(json.dumps(after,indent=2),encoding='utf-8')
             (self.output_dir/'after_comparison.json').write_text(json.dumps(basic,indent=2,ensure_ascii=False),encoding='utf-8')
+            ledger_event(self.output_dir,'APPLY',('HOLD' if result=='FAIL' else result),self.operator,self.mac,self.gpon_sn,self.target['ip'],self.host,missing)
             return result,missing,basic
         except Exception as exc:
             write_record(self.output_dir,self.host,'APPLY','FAIL',f'{type(exc).__name__}: {exc}',self.snapshot_before)
+            ledger_event(self.output_dir,'APPLY','HOLD',self.operator,self.mac,self.gpon_sn,self.target['ip'],self.host,'UNCERTAIN WRITE / manual review required: '+str(exc))
             raise
 
 
@@ -259,3 +271,99 @@ def save_manual_review(folder, host, comparison, confirmed, operator, notes):
     write_record(folder,host,'MANUAL_REVIEW',outcome,
                  'Operator='+operator.strip()+'; Auto='+automatic+'; '+notes.strip())
     return record
+
+
+# Persistent per-device IP ledger. Source of truth is CSV; Xlsx is a derived report.
+LEDGER_FIELDS=['time','event','result','operator','device_mac','gpon_sn','target_ip','router_ip','notes']
+
+def normalize_mac(value):
+    s=re.sub(r'[^0-9A-Fa-f]','',value or '').upper()
+    if not re.fullmatch(r'[0-9A-F]{12}',s):raise ValueError('MAC must be 12 hexadecimal digits')
+    return s
+
+
+def check_identity(mac,gpon):
+    m=normalize_mac(mac)
+    # Valid GPON SN on this platform is CMTD plus 8 hex characters = 12 chars.
+    g=re.sub(r'[^0-9A-Za-z]','',gpon or '').upper()
+    if not re.fullmatch(r'CMTD[0-9A-F]{8}',g):raise ValueError('GPON SN requires CMTD + 8 hexadecimal digits')
+    if g != 'CMTD'+m[-8:]:raise ValueError('GPON SN differs from CMTD + MAC last 8; confirm label/device before writing')
+    return m,g
+
+@contextlib.contextmanager
+def ledger_lock(folder):
+    folder=Path(folder);folder.mkdir(parents=True,exist_ok=True)
+    lock=folder/'.ip_ledger.lock'
+    for attempt in range(60):
+        try:
+            fd=os.open(lock,os.O_CREAT|os.O_EXCL|os.O_WRONLY)
+            os.write(fd,str(os.getpid()).encode());os.close(fd);break
+        except FileExistsError:
+            # Do not remove locks automatically: another operation may be in progress.
+            time.sleep(.1)
+    else:raise RuntimeError('IP ledger is locked; stop competing program and inspect lock before retry')
+    try:yield
+    finally:lock.unlink(missing_ok=True)
+
+def read_ledger(folder):
+    path=Path(folder)/'WAN_IP_Allocation.csv'
+    if not path.exists():return []
+    with path.open('r',encoding='utf-8-sig',newline='') as f:return list(csv.DictReader(f))
+
+def allocation_state(rows):
+    # Latest status per MAC; historical entries remain for audit.
+    current={}
+    for row in rows:
+        key=row.get('device_mac','')
+        if key:current[key]=row
+    return current
+
+def reserve_ip(folder,mac,gpon,target_ip,router_ip,operator):
+    mac,gpon=check_identity(mac,gpon)
+    if ipaddress.IPv4Address(target_ip) not in ipaddress.IPv4Network('192.168.2.0/24') or not 121<=int(target_ip.split('.')[-1])<=130:
+        raise ValueError('Allowed target IP range is 192.168.2.121 to 192.168.2.130')
+    if not operator.strip():raise ValueError('Operator is required')
+    with ledger_lock(folder):
+        rows=read_ledger(folder); current=allocation_state(rows)
+        for another,rec in current.items():
+            if another!=mac and rec['target_ip']==target_ip and rec['result'] in ('RESERVED','OK','VERIFY_INCOMPLETE','MANUAL_OK','HOLD'):
+                raise ValueError('IP '+target_ip+' is already assigned to MAC '+another)
+            if another!=mac and rec['gpon_sn']==gpon and rec['result'] in ('RESERVED','OK','VERIFY_INCOMPLETE','MANUAL_OK','HOLD'):
+                raise ValueError('GPON SN is already assigned to another MAC')
+        prior=current.get(mac)
+        if prior and prior['result'] in ('RESERVED','OK','VERIFY_INCOMPLETE','MANUAL_OK','HOLD') and prior['target_ip']!=target_ip:
+            raise ValueError('This MAC already has target IP '+prior['target_ip']+'; manual review required')
+        ledger_event(folder,'RESERVE','RESERVED',operator,mac,gpon,target_ip,router_ip,'reserved before write',locked=True)
+
+def ledger_event(folder,event,result,operator,mac,gpon,target_ip,router_ip,notes='',locked=False):
+    if not locked:
+        with ledger_lock(folder):return ledger_event(folder,event,result,operator,mac,gpon,target_ip,router_ip,notes,True)
+    path=Path(folder)/'WAN_IP_Allocation.csv'; path.parent.mkdir(parents=True,exist_ok=True)
+    row=dict(time=datetime.now().isoformat(timespec='seconds'),event=event,result=result,
+        operator=operator,device_mac=mac,gpon_sn=gpon,target_ip=target_ip,router_ip=router_ip,notes=notes)
+    with path.open('a',encoding='utf-8-sig',newline='') as f:
+        writer=csv.DictWriter(f,fieldnames=LEDGER_FIELDS)
+        if f.tell()==0:writer.writeheader()
+        writer.writerow(row);f.flush();os.fsync(f.fileno())
+    try:
+        export_ledger_excel(folder)
+    except (OSError,PermissionError):
+        # CSV is committed; Excel file open in another process cannot revoke allocation.
+        pass
+    return row
+
+def export_ledger_excel(folder):
+    # Deliberately regenerate derived XLSX from append-only CSV so Excel is never
+    # used as the transaction authority. Existing factory records stay preserved.
+    from openpyxl import Workbook
+    from openpyxl.styles import PatternFill, Font, Alignment
+    from openpyxl.utils import get_column_letter
+    wb=Workbook();ws=wb.active;ws.title='IP Allocation Record'
+    ws.append(LEDGER_FIELDS)
+    for r in read_ledger(folder):ws.append([r.get(f,'') for f in LEDGER_FIELDS])
+    ws.freeze_panes='A2';ws.auto_filter.ref=f'A1:I{ws.max_row}'
+    widths=[22,17,22,18,20,20,20,20,58]
+    for i,w in enumerate(widths,1):ws.column_dimensions[get_column_letter(i)].width=w
+    for c in ws[1]:c.fill=PatternFill('solid',fgColor='17365D');c.font=Font(color='FFFFFF',bold=True);c.alignment=Alignment(vertical='center')
+    ws.row_dimensions[1].height=25
+    wb.save(Path(folder)/'WAN_IP_Allocation.xlsx')

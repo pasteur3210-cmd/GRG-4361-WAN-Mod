@@ -38,9 +38,9 @@ def test_unknown_readback_not_pass():
     c=WanConfig(0,'nas0_0',2,1,3,0,1,160,1,0,1,1500,1492,1)
     result=extended_comparison('',TARGET,compare_basic(c,TARGET))
     assert result['vid']['status']=='MATCH'
-    assert result['ip']['status']=='UNKNOWN'
-    assert result['br']['status']=='UNKNOWN'
-    assert result['port10ge']['status']=='UNKNOWN'
+    assert result['ip']['status']=='DIFF'  # real parsed value differs
+    assert result['br']['status']=='MATCH'
+    assert result['port10ge']['status']=='DIFF'
 
 
 def test_multicast_vlan_writing():
@@ -57,7 +57,7 @@ def test_multicast_vlan_writing():
 def test_multicast_vlan_unknown_in_readback():
     c=WanConfig(0,'nas0_0',2,1,3,0,1,160,1,0,1,1500,1492,1)
     r=extended_comparison('', TARGET, compare_basic(c,TARGET))
-    assert r['multicast_vid']['status']=='UNKNOWN'
+    assert r['multicast_vid']['status']=='DIFF'  # value 0 differs from target 160
 
 def test_multicast_vlan_range():
     for bad in [0,4096,-1,'160']:

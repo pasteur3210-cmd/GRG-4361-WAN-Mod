@@ -1,0 +1,3139 @@
+<html><head>
+<meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Cache-Control" content="no-cache">
+<meta name="viewport" content="width=device-width">
+<link rel="stylesheet" href="/admin/bootstrap.min.css">
+<link rel="stylesheet" href="/admin/reset.css">
+<link rel="stylesheet" href="/admin/base.css">
+<link rel="stylesheet" href="/admin/style.css">
+<script language="javascript" src="common.js"></script>
+<script type="text/javascript" src="share.js"></script>
+
+<title>PON WAN</title>
+<script type="text/javascript" src="base64_code.js"></script>
+<script language="javascript">
+
+var initConnectMode;
+var pppConnectStatus=0;
+
+var dgwstatus;
+var gtwy;
+var interfaceInfo = '';
+var gtwyIfc ='';
+var gwInterface=0;
+var ipver=1;
+
+var curlink = null;
+var ctype = 4;
+var temp_user_mvid_value = 0;
+var sw_lan_port_num = 0
+
+var cgi = new Object();
+var links = new Array();
+var mape_routing_mode_support = 0;
+
+with(links){push(new it_nr("nas0_0" , new it("applicationtype", 2), new it("cmode", 1), new it("brmode", 3), new it("napt", 0), new it("logic_port", 0), new it("logic_port_wan_num", 0), new it("mtu_pppoe", 1500), new it("enableIGMP", 0), new it("dgw", 1), new it("vlan", 1), new it("vid", 160), new it("vprio", 1), new it("mVid", 160), new it("enable", 1), new it("mtu", 1500), new it("IpProtocol", 1), new it("v6TunnelType", 0), new it("s4over6Type", 0), new it("v6TunnelRv4IP", ""), new it("ipDhcp", 0), new it("ipAddr", "192.168.2.121"), new it("remoteIpAddr", "192.168.2.100"), new it("netMask", "255.255.255.0"), new it("dnsMode", 0), new it("v4dns1", ""), new it("v4dns2", ""), new it("enable_opt_60", 0), new it("opt60_val", unescapeHTML("")), new it("enable_opt_61", 0), new it("iaid", 0), new it("duid_type", 0), new it("duid_ent_num", 0), new it("duid_id", unescapeHTML("")), new it("enable_opt_125", 0), new it("manufacturer", unescapeHTML("")), new it("product_class", unescapeHTML("")), new it("model_name", unescapeHTML("")), new it("serial_num", unescapeHTML("")), new it("pppUsername", ""), new it("pppPassword", ""), new it("pppCtype", 0), new it("pppIdleTime", 0), new it("mtu_pppoe", 1500), new it("pppAuth", 0), new it("pppACName", unescapeHTML("")), new it("pppServiceName", unescapeHTML("")), new it("AddrMode", 0), new it("Ipv6Addr", ""), new it("RemoteIpv6Addr", ""), new it("RemoteIpv6EndPointAddr", ""), new it("Ipv6Dns1", ""), new it("Ipv6Dns2", ""), new it("Ipv6AddrPrefixLen", 0), new it("Ipv6Dhcp", 0), new it("Ipv6DhcpRequest", 0), new it("dnsv6Mode", 0), new it("napt_v6", 0), new it("dslite_enable", 0), new it("dslite_aftr_mode", 0), new it("dslite_aftr_hostname", unescapeHTML("")), new it("itfGroup", 16), new it("SixrdMode", 0), new it("SixrdIPv4MaskLen", 0), new it("SixrdPrefixLen", 0), new it("SixrdPrefix", ""), new it("SixrdBRv4IP", ""), new it("enableMLD", 0), new it("omci_configured", 0)));
+push(new it_nr("nas0_1" , new it("applicationtype", 8), new it("cmode", 1), new it("brmode", 0), new it("napt", 0), new it("logic_port", 0), new it("logic_port_wan_num", 0), new it("mtu_pppoe", 1500), new it("enableIGMP", 0), new it("dgw", 0), new it("vlan", 1), new it("vid", 747), new it("vprio", 6), new it("mVid", 0), new it("enable", 1), new it("mtu", 1500), new it("IpProtocol", 1), new it("v6TunnelType", 0), new it("s4over6Type", 0), new it("v6TunnelRv4IP", ""), new it("ipDhcp", 1), new it("ipAddr", "0.0.0.0"), new it("remoteIpAddr", "0.0.0.0"), new it("netMask", "0.0.0.0"), new it("dnsMode", 1), new it("v4dns1", ""), new it("v4dns2", ""), new it("enable_opt_60", 0), new it("opt60_val", unescapeHTML("")), new it("enable_opt_61", 0), new it("iaid", 0), new it("duid_type", 0), new it("duid_ent_num", 0), new it("duid_id", unescapeHTML("")), new it("enable_opt_125", 0), new it("manufacturer", unescapeHTML("")), new it("product_class", unescapeHTML("")), new it("model_name", unescapeHTML("")), new it("serial_num", unescapeHTML("")), new it("pppUsername", ""), new it("pppPassword", ""), new it("pppCtype", 0), new it("pppIdleTime", 0), new it("mtu_pppoe", 1500), new it("pppAuth", 0), new it("pppACName", unescapeHTML("")), new it("pppServiceName", unescapeHTML("")), new it("AddrMode", 0), new it("Ipv6Addr", ""), new it("RemoteIpv6Addr", ""), new it("RemoteIpv6EndPointAddr", ""), new it("Ipv6Dns1", ""), new it("Ipv6Dns2", ""), new it("Ipv6AddrPrefixLen", 0), new it("Ipv6Dhcp", 0), new it("Ipv6DhcpRequest", 0), new it("dnsv6Mode", 0), new it("napt_v6", 0), new it("dslite_enable", 0), new it("dslite_aftr_mode", 0), new it("dslite_aftr_hostname", unescapeHTML("")), new it("itfGroup", 0), new it("SixrdMode", 0), new it("SixrdIPv4MaskLen", 0), new it("SixrdPrefixLen", 0), new it("SixrdPrefix", ""), new it("SixrdBRv4IP", ""), new it("enableMLD", 0), new it("omci_configured", 0)));
+push(new it_nr("nas0_2" , new it("applicationtype", 4), new it("cmode", 0), new it("brmode", 3), new it("napt", 0), new it("logic_port", 0), new it("logic_port_wan_num", 0), new it("mtu_pppoe", 1500), new it("enableIGMP", 0), new it("dgw", 0), new it("vlan", 1), new it("vid", 9), new it("vprio", 3), new it("mVid", 0), new it("enable", 1), new it("mtu", 1500), new it("IpProtocol", 0), new it("v6TunnelType", 0), new it("s4over6Type", 0), new it("v6TunnelRv4IP", ""), new it("ipDhcp", 0), new it("ipAddr", "0.0.0.0"), new it("remoteIpAddr", "0.0.0.0"), new it("netMask", "0.0.0.0"), new it("dnsMode", 0), new it("v4dns1", ""), new it("v4dns2", ""), new it("enable_opt_60", 0), new it("opt60_val", unescapeHTML("")), new it("enable_opt_61", 0), new it("iaid", 0), new it("duid_type", 0), new it("duid_ent_num", 0), new it("duid_id", unescapeHTML("")), new it("enable_opt_125", 0), new it("manufacturer", unescapeHTML("")), new it("product_class", unescapeHTML("")), new it("model_name", unescapeHTML("")), new it("serial_num", unescapeHTML("")), new it("pppUsername", ""), new it("pppPassword", ""), new it("pppCtype", 0), new it("pppIdleTime", 0), new it("mtu_pppoe", 1500), new it("pppAuth", 0), new it("pppACName", unescapeHTML("")), new it("pppServiceName", unescapeHTML("")), new it("AddrMode", 0), new it("Ipv6Addr", ""), new it("RemoteIpv6Addr", ""), new it("RemoteIpv6EndPointAddr", ""), new it("Ipv6Dns1", ""), new it("Ipv6Dns2", ""), new it("Ipv6AddrPrefixLen", 0), new it("Ipv6Dhcp", 0), new it("Ipv6DhcpRequest", 0), new it("dnsv6Mode", 0), new it("napt_v6", 0), new it("dslite_enable", 0), new it("dslite_aftr_mode", 0), new it("dslite_aftr_hostname", unescapeHTML("")), new it("itfGroup", 0), new it("SixrdMode", 0), new it("SixrdIPv4MaskLen", 0), new it("SixrdPrefixLen", 0), new it("SixrdPrefix", ""), new it("SixrdBRv4IP", ""), new it("enableMLD", 0), new it("omci_configured", 0)));
+}
+
+function show_password()
+{
+	var x= document.ethwan.pppPassword;
+
+	if (x.type == "password") {
+		x.type = "text";
+	} else {
+		x.type = "password";
+	}
+}
+
+function isLocalWan()
+{
+	var ctype_value = document.ethwan.ctype.value;
+	switch (ctype_value) {
+
+		case '1':	// TR069
+		case '8':	// VOICE
+		case '9':	// TR069 & VOICE
+			return 1;
+		default:
+			return 0;
+	}	
+}
+
+function pppTypeSelection()
+{
+	if ( document.ethwan.pppConnectType.selectedIndex == 2) {
+		document.ethwan.pppIdleTime.value = "";
+		disableTextField(document.ethwan.pppIdleTime);
+	}
+	else {
+		if (document.ethwan.pppConnectType.selectedIndex == 1) {
+			enableTextField(document.ethwan.pppIdleTime);
+		}
+		else {
+			document.ethwan.pppIdleTime.value = "";
+			disableTextField(document.ethwan.pppIdleTime);
+		}
+	}
+}
+
+function checkDefaultGW() {
+	with (document.forms[0]) {
+		if (droute[0].checked == false && droute[1].checked == false && gwStr[0].checked == false && gwStr[1].checked == false) {			
+			alert('A default gateway has to be selected.');
+			return false;
+		}
+		if (droute[1].checked == true) {
+			if (gwStr[0].checked == true) {
+				if (isValidIpAddress(dstGtwy.value, "Default Gateway IP Address") == false)
+					return false;
+			}
+		}
+	}
+	return true;
+}
+
+function check_dhcp_opts()
+{
+	with (document.forms[0])
+	{
+		
+		if(typeof enable_opt_60 !== 'undefined' &&enable_opt_60.checked)
+		{
+			if (opt60_val.value=="") {				
+				alert('Vendor ID cannot be empty!');
+				opt60_val.focus();
+				return false;
+			}
+			if (checkString(opt60_val.value) == 0) {				
+				alert('Invalid Vendor ID.');
+				opt60_val.focus();
+				return false;
+			}
+		}
+
+		
+		if(typeof enable_opt_61 !== 'undefined'&&enable_opt_61.checked)
+		{
+			if (iaid.value=="") {				
+				alert('IAID cannot be empty!');
+				iaid.focus();
+				return false;
+			}
+			if (checkDigit(iaid.value) == 0) {				
+				alert('IAID should be a number.');
+				iaid.focus();
+				return false;
+			}
+
+			if(duid_type[1].checked)
+			{
+				
+				if (duid_ent_num.value=="") {					
+					alert('Enterprise number cannot be empty!');
+					duid_ent_num.focus();
+					return false;
+				}
+				if (checkDigit(duid_ent_num.value) == 0) {					
+					alert('Enterprise number should be a number.');
+					duid_ent_num.focus();
+					return false;
+				}
+
+				if (duid_id.value=="") {
+					alert('DUID Identifier cannot be empty!');
+					duid_id.focus();
+					return false;
+				}
+				if (checkString(duid_id.value) == 0) {					
+					alert('Invalid DUID Identifier.');
+					duid_id.focus();
+					return false;
+				}
+			}
+		}
+
+		if(typeof enable_opt_125 !== 'undefined' &&enable_opt_125.checked)
+		{
+			if (manufacturer.value=="") {				
+				alert('Manufacturer OUI cannot be empty!');
+				manufacturer.focus();
+				return false;
+			}
+			if (checkString(manufacturer.value) == 0) {				
+				alert('Invalid Manufacturer OUI.');
+				manufacturer.focus();
+				return false;
+			}
+
+			if (product_class.value=="") {				
+				alert('Product Class cannot be empty!');
+				product_class.focus();
+				return false;
+			}
+			if (checkString(product_class.value) == 0) {				
+				alert('Invalid Product Class.');
+				product_class.focus();
+				return false;
+			}
+
+			if (model_name.value=="") {
+				alert('Model Name cannot be empty!');				
+				model_name.focus();
+				return false;
+			}
+			if (checkString(model_name.value) == 0) {				
+				alert('Invalid Model Name.');
+				model_name.focus();
+				return false;
+			}
+
+			if (serial_num.value=="") {				
+				alert('Serial Number cannot be empty!');
+				serial_num.focus();
+				return false;
+			}
+			if (checkString(serial_num.value) == 0) {				
+				alert('Serial Number cannot be empty!');
+				serial_num.focus();
+				return false;
+			}
+		}
+	}
+}
+
+function disableUsernamePassword()
+{
+	//avoid sending username/password without encode
+	disableTextField(document.ethwan.pppUserName);
+	disableTextField(document.ethwan.pppPassword);
+}
+function applyCheck(obj)
+{
+	var tmplst = "";
+	var ptmap = 0;
+	var pmchkpt = document.getElementById("tbl_pmap");
+
+	if (pmchkpt) {
+		with (document.forms[0]) {
+			if (0)
+			{
+				for (var i = 0; i < (sw_lan_port_num+10); i++) {
+					
+					if (!chkpt[i])
+						break;
+
+					if (chkpt[i].checked == true)
+						ptmap |= (0x1 << i);
+				}
+			}
+			else
+			{
+				for (var i = 0; i < 14; i++) {
+					
+					if (!chkpt[i])
+						break;
+
+					if (chkpt[i].checked == true)
+						ptmap |= (0x1 << i);
+				}
+			}
+			
+			itfGroup.value = ptmap;
+		}
+	}
+
+	if (checkDefaultGW()==false)
+		return false;
+	var str1 = document.ethwan.macclone.value;
+	var str2 = document.ethwan.maccloneaddr.value;
+	if( str1 != 0){
+  		if ( str2.length != 12) {
+			alert('Input MAC Clone address is not complete. It should be 12 digits in hex.');
+			document.ethwan.maccloneaddr.focus();
+			return false;
+  		}
+
+  		for (var i=0; i<str2.length; i++) {
+    		if ( (str2.charAt(i) >= '0' && str2.charAt(i) <= '9') ||
+				(str2.charAt(i) >= 'a' && str2.charAt(i) <= 'f') ||
+				(str2.charAt(i) >= 'A' && str2.charAt(i) <= 'F') )
+				continue;
+
+			alert('Invalid MAC Clone address. It should be in hex number (0-9 or a-f).');
+			document.ethwan.maccloneaddr.focus();
+			return false;
+ 	 	}
+	}
+
+	if (0)
+	{
+		if(logic_port.value == "")
+		{
+			alert("Incorrect Wan Port number, Wan Port can not select NULL");
+			return false;
+		}
+	}
+	if (document.ethwan.vlan.checked == true) {
+		if (document.ethwan.vid.value == "") {			
+			alert('VID should not be empty!');
+			document.ethwan.vid.focus();
+			return false;
+		}
+		else if(document.ethwan.vid.value<0 ||document.ethwan.vid.value>4095) {
+				alert("Incorrect vlan id, shoule be 1~4095");
+				return false;
+		}		
+	}
+	
+	
+	if (document.ethwan.multicast_vid.style.display != "none")
+	{
+		var multicast_vid_value = document.ethwan.multicast_vid.value
+		
+		if (multicast_vid_value.length != 0)
+		{
+			var multicast_vid_value = document.ethwan.multicast_vid.value
+			if (multicast_vid_value < 1 || multicast_vid_value > 4095)
+			{
+				alert('Invalid Multcast VLAN ID!');
+				return false;
+			}
+		}
+	}
+	
+	if ( document.ethwan.adslConnectionMode.value == 2 ) {
+		if (document.ethwan.pppUserName.value=="") {			
+			alert('PPP user name cannot be empty!');
+			document.ethwan.pppUserName.focus();
+			return false;
+		}
+		if (includeSpace(document.ethwan.pppUserName.value)) {			
+			alert('Cannot accept space character in PPP user name.');
+			document.ethwan.pppUserName.focus();
+			return false;
+		}
+		if (checkString(document.ethwan.pppUserName.value) == 0) {			
+			alert('Invalid PPP user name.');
+			document.ethwan.pppUserName.focus();
+			return false;
+		}
+		document.ethwan.encodePppUserName.value=encode64(document.ethwan.pppUserName.value);
+		
+		if (document.ethwan.pppPassword.value=="") {			
+			alert('PPP password cannot be empty!');
+			document.ethwan.pppPassword.focus();
+			return false;
+		}
+
+		if (includeSpace(document.ethwan.pppPassword.value)) {
+			alert('Cannot accept space character in PPP password.');
+			document.ethwan.pppPassword.focus();
+			return false;
+		}
+		if (checkString(document.ethwan.pppPassword.value) == 0) {
+			alert(' Invalid PPP password.');
+			document.ethwan.pppPassword.focus();
+			return false;
+		}
+		document.ethwan.encodePppPassword.value=encode64(document.ethwan.pppPassword.value);
+		document.ethwan.pppPassword.disabled=true;
+		
+		if (document.ethwan.pppConnectType.selectedIndex == 1) {
+			if (document.ethwan.pppIdleTime.value <= 0) {				
+				alert('Invalid PPP idle time.');
+				document.ethwan.pppIdleTime.focus();
+				return false;
+			}
+		}
+	}
+
+	if (document.ethwan.dns1.value !="")
+	{
+		if (!checkHostIP(document.ethwan.dns1, 1))				
+		{					
+			document.ethwan.dns1.focus();
+			return false;
+		}
+	}
+	
+	if (document.ethwan.dns2.value !="")
+	{
+		if (!checkHostIP(document.ethwan.dns2, 1))				
+		{					
+			document.ethwan.dns2.focus();
+			return false;
+		}
+	}
+	
+	
+	if (document.getElementById("tbmtu").style.display != "none")
+	{
+		if( document.ethwan.mtu.value<1280 || document.ethwan.mtu.value>2000 )
+		{
+			alert("Invalid MTU!");
+			document.ethwan.mtu.focus();
+			return false;
+		}
+	}
+
+	if (document.getElementById("tbmtu_pppoe").style.display != "none")
+	{
+		if( document.ethwan.mtu_pppoe.value<1280 || document.ethwan.mtu_pppoe.value>1492 )
+		{
+			alert("Invalid MTU!");
+			document.ethwan.mtu_pppoe.focus();
+			return false;
+		}
+	}
+
+	if (0) {
+		if(document.ethwan.IpProtocolType.value & 1){
+			if ( document.ethwan.adslConnectionMode.value == 1 ) {
+				if (document.ethwan.ipMode[0].checked)
+				{
+					
+					if ( document.ethwan.ipUnnum.disabled || ( !document.ethwan.ipUnnum.disabled && !document.ethwan.ipUnnum.checked )) {
+						if (!checkHostIP(document.ethwan.ip, 1))
+							return false;
+						if (document.ethwan.remoteIp.visiblity == "hidden") {
+							if (!checkHostIP(document.ethwan.remoteIp, 1))
+							return false;
+						}
+						if (document.ethwan.adslConnectionMode.value == 1 && !checkNetmask(document.ethwan.netmask, 1))
+							return false;
+					}
+				}
+				else
+				{
+					
+					if(check_dhcp_opts() == false)
+						return false;
+				}
+			}
+		}
+	}
+
+	if (0) {
+		
+		if (document.ethwan.adslConnectionMode.value != 0
+			&& (document.ethwan.IpProtocolType.value != 1 || document.ethwan.v6TunnelType.value == 1 || document.ethwan.v6TunnelType.value == 2 || document.ethwan.v6TunnelType.value == 3) ) {
+
+			if (document.ethwan.IpProtocolType.value & 2) {
+				document.ethwan.v6TunnelType.value = 0;
+			}
+
+			document.ethwan.iana.disabled = false;	// those should be disable on wanAddrModeChange(), but we should submit value
+			document.ethwan.iapd.disabled = false;	// those should be disable on wanAddrModeChange(), but we should submit value
+
+			if(document.ethwan.AddrMode.value == '16') {
+				if(document.ethwan.iana.checked == false && document.ethwan.iapd.checked == false ) {
+					alert('Please select iana or iapd!');
+					document.ethwan.iana.focus();
+					return false;
+				}
+			}
+
+			if (document.ethwan.v6TunnelType.value == 2) {	// 6in4
+				document.ethwan.Ipv6Addr.value = document.ethwan.Ipv6Addr6in4.value;
+				document.ethwan.Ipv6PrefixLen.value = document.ethwan.Ipv6PrefixLen6in4.value;
+				document.ethwan.Ipv6Gateway.value = document.ethwan.Ipv6Gateway6in4.value;
+				document.ethwan.v6TunnelRv4IP.value = document.ethwan.v6TunnelRv4IP6in4.value;
+				if ( document.ethwan.dnsV6Mode6in4[1].checked ) { //IPv6 DNS request is disable
+					document.ethwan.dnsV6Mode[1].checked = true;
+					document.ethwan.Ipv6Dns1.value = "";
+					document.ethwan.Ipv6Dns2.value = "";
+					document.ethwan.Ipv6Dns16rd.value = "";
+					document.ethwan.Ipv6Dns26rd.value = "";
+					document.ethwan.Ipv6Dns16to4.value = "";
+					document.ethwan.Ipv6Dns26to4.value = "";
+				}
+				else {
+					document.ethwan.dnsV6Mode[0].checked = true;
+					document.ethwan.Ipv6Dns1.value = "";
+					document.ethwan.Ipv6Dns2.value = "";
+					document.ethwan.Ipv6Dns16rd.value = "";
+					document.ethwan.Ipv6Dns26rd.value = "";
+					document.ethwan.Ipv6Dns16in4.value = "";
+					document.ethwan.Ipv6Dns26in4.value = "";
+					document.ethwan.Ipv6Dns16to4.value = "";
+					document.ethwan.Ipv6Dns26to4.value = "";
+				}
+			}
+
+			if (document.ethwan.v6TunnelType.value == 3) {	// 6to4
+				document.ethwan.v6TunnelRv4IP.value = document.ethwan.v6TunnelRv4IP6to4.value;
+				document.ethwan.Ipv6Dns1.value = "";
+				document.ethwan.Ipv6Dns2.value = "";
+				document.ethwan.Ipv6Dns16rd.value = "";
+				document.ethwan.Ipv6Dns26rd.value = "";
+				document.ethwan.Ipv6Dns16in4.value = "";
+				document.ethwan.Ipv6Dns26in4.value = "";
+			}
+
+			if(document.ethwan.AddrMode.value == '2') {
+				if(document.ethwan.Ipv6Addr.value == "" || document.ethwan.Ipv6PrefixLen.value == "") {
+					alert('Please input ipv6 address and Prefix Length!');
+					document.ethwan.Ipv6Addr.focus();
+					return false;
+				}
+				if(document.ethwan.Ipv6Addr.value != ""){
+					if (! isGlobalIpv6Address( document.ethwan.Ipv6Addr.value) ){
+						alert('Invalid ipv6 address!');
+						document.ethwan.Ipv6Addr.focus();
+						return false;
+					}
+					var prefixlen= getDigit(document.ethwan.Ipv6PrefixLen.value, 1);
+					if (prefixlen > 128 || prefixlen <= 0) {
+						alert('Invalid ipv6 prefix length!');
+						document.ethwan.Ipv6PrefixLen.focus();
+						return false;
+					}
+				}
+				if(document.ethwan.Ipv6Gateway.value != "" ){
+					if (! isUnicastIpv6Address( document.ethwan.Ipv6Gateway.value) ){
+						alert('Invalid ipv6 gateway address!');
+						document.ethwan.Ipv6Gateway.focus();
+						return false;
+					}
+				}
+				if(document.ethwan.Ipv6Dns1.value != "" ){
+					if (! isIpv6Address( document.ethwan.Ipv6Dns1.value) ){
+						alert('Invalid primary IPv6 DNS address!');
+						document.ethwan.Ipv6Dns1.focus();
+						return false;
+					}
+				}
+				if(document.ethwan.Ipv6Dns2.value != "" ){
+					if (! isIpv6Address( document.ethwan.Ipv6Dns2.value) ){
+						alert('Invalid secondary IPv6 DNS address!');
+						document.ethwan.Ipv6Dns2.focus();
+						return false;
+					}
+				}
+			}
+			else if ( document.ethwan.dnsV6Mode[1].checked ) { //IPv6 DNS request is disable
+				if(document.ethwan.Ipv6Dns1.value != "" ){
+					if (! isUnicastIpv6Address( document.ethwan.Ipv6Dns1.value) ){
+						alert('Invalid primary IPv6 DNS address!');
+						document.ethwan.Ipv6Dns1.focus();
+						return false;
+					}
+				}
+				if(document.ethwan.Ipv6Dns2.value != "" ){
+					if (! isUnicastIpv6Address( document.ethwan.Ipv6Dns2.value) ){
+						alert('Invalid secondary IPv6 DNS address!');
+						document.ethwan.Ipv6Dns2.focus();
+						return false;
+					}
+				}
+			}
+			else if (document.ethwan.IpProtocolType.value == 2 || document.ethwan.IpProtocolType.value == 3) {
+				document.ethwan.Ipv6Addr.value = "";
+				document.ethwan.Ipv6PrefixLen.value = "";
+				document.ethwan.Ipv6Gateway.value = "";
+				document.ethwan.Ipv6Dns1.value = "";
+				document.ethwan.Ipv6Dns2.value = "";
+			}
+
+			//6RD
+			if (1) {
+
+				if (document.ethwan.v6TunnelType.value == 1) // 6rd(Manual)
+				{
+					if (document.ethwan.SixrdMode[1].checked) {
+						if(document.ethwan.SixrdBRv4IP.value == ""){
+							alert('Invalid 6rd Board Router v4IP address!');
+							document.ethwan.SixrdBRv4IP.focus();
+							return false;
+						}
+
+						if(document.ethwan.SixrdIPv4MaskLen.value == ""){
+							alert('Invalid 6rd IPv4 Mask length address!');
+							document.ethwan.SixrdIPv4MaskLen.focus();
+							return false;
+						}
+
+						if(document.ethwan.SixrdPrefix.value == ""){
+							alert('Invalid 6rd Prefix address!');
+							document.ethwan.SixrdPrefix.focus();
+							return false;
+						}
+
+						if(document.ethwan.SixrdPrefixLen.value == ""){
+							alert('Invalid 6rd Prefix length address!');
+							document.ethwan.SixrdPrefixLen.focus();
+							return false;
+						}
+					}
+
+					if (document.ethwan.SixrdMode[0].checked || document.ethwan.SixrdMode[1].checked) {// 6rd(auto)
+						if(document.ethwan.Ipv6Dns16rd.value != "" ){
+							if (! isUnicastIpv6Address( document.ethwan.Ipv6Dns16rd.value) ){
+								alert('Invalid primary IPv6 DNS address!');
+								document.ethwan.Ipv6Dns16rd.focus();
+								return false;
+							}
+						}
+						if(document.ethwan.Ipv6Dns26rd.value != "" ){
+							if (! isUnicastIpv6Address( document.ethwan.Ipv6Dns26rd.value) ){
+								alert('Invalid secondary IPv6 DNS address!');
+								document.ethwan.Ipv6Dns26rd.focus();
+								return false;
+							}
+						}
+					}
+				}
+				else{
+
+					document.ethwan.SixrdBRv4IP.value = "";
+					document.ethwan.SixrdIPv4MaskLen.value = "";
+					document.ethwan.SixrdPrefix.value = "";
+					document.ethwan.SixrdPrefixLen.value = "";
+					document.ethwan.Ipv6Dns16rd.value = "";
+					document.ethwan.Ipv6Dns26rd.value = "";
+				}
+
+			}
+		}
+	}
+
+	if(1) {
+		if (document.ethwan.IpProtocolType.value == 1 && (document.ethwan.v6TunnelType.value == 1 || document.ethwan.v6TunnelType.value == 2 || document.ethwan.v6TunnelType.value == 3)) {// 6rd or 6in4 or 6to4
+			document.ethwan.iapd.checked = false;
+		}
+	}
+
+	if(document.ethwan.lkname.value != "new") tmplst = curlink.name;
+	document.ethwan.lst.value = tmplst;
+
+	document.ethwan.qosEnabled.value = "ON"
+
+	//avoid sending username/password without encode
+	disableUsernamePassword();
+
+	obj.isclick = 1;
+	postTableEncrypt(document.forms[0].postSecurityFlag, document.forms[0]);
+
+	return true;
+}
+
+function deleteCheck(obj)
+{
+	var tmplst = "";
+
+	if ( document.ethwan.lkname.value == "new" )
+	{		
+		alert('no link selected!');
+		return false;
+	}
+
+	tmplst = curlink.name;
+	document.ethwan.lst.value = tmplst;
+
+	disableUsernamePassword();
+
+	obj.isclick = 1;
+	postTableEncrypt(document.forms[0].postSecurityFlag, document.forms[0]);
+
+	return true;
+}
+
+function setPPPConnected()
+{
+	pppConnectStatus = 1;
+}
+
+function dnsModeClicked()
+{
+	if ( document.ethwan.dnsMode[0].checked )
+	{
+		disableTextField(document.ethwan.dns1);
+		disableTextField(document.ethwan.dns2);
+	}
+	
+	if ( document.ethwan.dnsMode[1].checked )
+	{
+		enableTextField(document.ethwan.dns1);
+		enableTextField(document.ethwan.dns2);
+	}
+}
+
+function SixrdModeClicked()
+{
+	if (1) {
+		if ( document.ethwan.SixrdMode[0].checked )
+		{
+			disableTextField(document.ethwan.SixrdBRv4IP);
+			disableTextField(document.ethwan.SixrdIPv4MaskLen);
+			disableTextField(document.ethwan.SixrdPrefix);
+			disableTextField(document.ethwan.SixrdPrefixLen);
+		}
+
+		if ( document.ethwan.SixrdMode[1].checked )
+		{
+			enableTextField(document.ethwan.SixrdBRv4IP);
+			enableTextField(document.ethwan.SixrdIPv4MaskLen);
+			enableTextField(document.ethwan.SixrdPrefix);
+			enableTextField(document.ethwan.SixrdPrefixLen);
+		}
+	}
+}
+
+function dnsModeV6Clicked()
+{
+	if ( document.ethwan.dnsV6Mode[0].checked )
+	{
+		disableTextField(document.ethwan.Ipv6Dns1);
+		disableTextField(document.ethwan.Ipv6Dns2);
+	}
+
+	if ( document.ethwan.dnsV6Mode[1].checked )
+	{
+		enableTextField(document.ethwan.Ipv6Dns1);
+		enableTextField(document.ethwan.Ipv6Dns2);
+	}
+}
+
+function dnsModeV6Clicked6in4()
+{
+	if ( document.ethwan.dnsV6Mode6in4[0].checked )
+	{
+		disableTextField(document.ethwan.Ipv6Dns16in4);
+		disableTextField(document.ethwan.Ipv6Dns26in4);
+	}
+
+	if ( document.ethwan.dnsV6Mode6in4[1].checked )
+	{
+		enableTextField(document.ethwan.Ipv6Dns16in4);
+		enableTextField(document.ethwan.Ipv6Dns26in4);
+	}
+}
+
+function disableFixedIpInput()
+{
+	disableTextField(document.ethwan.ip);
+	disableTextField(document.ethwan.remoteIp);
+	disableTextField(document.ethwan.netmask);
+	
+	document.ethwan.dnsMode[0].disabled = false;
+	document.ethwan.dnsMode[1].disabled = false;	
+	dnsModeClicked();
+
+	if (1) {
+		document.ethwan.SixrdMode[0].disabled = false;
+		document.ethwan.SixrdMode[1].disabled = false;
+		SixrdModeClicked();
+	}
+}
+
+function enableFixedIpInput()
+{
+	enableTextField(document.ethwan.ip);
+	enableTextField(document.ethwan.remoteIp);
+	if (document.ethwan.adslConnectionMode.value == 4)
+		disableTextField(document.ethwan.netmask);
+	else
+		enableTextField(document.ethwan.netmask);
+	
+	document.ethwan.dnsMode[0].disabled = true;
+	document.ethwan.dnsMode[1].disabled = true;	
+	dnsModeClicked();
+
+	if (1) {
+		document.ethwan.SixrdMode[0].disabled = true;
+		document.ethwan.SixrdMode[1].disabled = true;
+		SixrdModeClicked();
+	}
+}
+
+function disableDNSv6Input()
+{
+	document.ethwan.dnsV6Mode[0].disabled = false;
+	document.ethwan.dnsV6Mode[1].disabled = false;
+	dnsModeV6Clicked();
+}
+
+function enableDNSv6Input()
+{
+	document.ethwan.dnsV6Mode[0].disabled = true;
+	document.ethwan.dnsV6Mode[1].disabled = true;
+	dnsModeV6Clicked();
+}
+
+function disableDNSv6Input6in4()
+{
+	document.ethwan.dnsV6Mode6in4[0].disabled = false;
+	document.ethwan.dnsV6Mode6in4[1].disabled = false;
+	dnsModeV6Clicked6in4();
+}
+
+function enableDNSv6Input6in4()
+{
+	document.ethwan.dnsV6Mode6in4[0].disabled = true;
+	document.ethwan.dnsV6Mode6in4[1].disabled = true;
+	dnsModeV6Clicked6in4();
+}
+
+function v6inv4TunnelSel()
+{
+	if(1) {
+		if (document.ethwan.IpProtocolType.value == 1 && document.ethwan.adslConnectionMode.value != 0) { // IPv4 only and not bridge
+			if (1) {
+				document.getElementById('v6TunnelDiv').style.display='';
+				v6TunnelChange();
+			}
+		}
+		else {
+			if (1) {
+				document.getElementById('v6TunnelDiv').style.display='none';
+				document.getElementById('6in4Div').style.display='none';
+				document.getElementById('6to4Div').style.display='none';
+			}
+			if (1) document.getElementById('6rdDiv').style.display='none';
+		}
+	}
+}
+
+function v6inv4Disable() {
+	if(1) {
+		if (1){
+			document.getElementById('v6TunnelDiv').style.display='none';
+			document.getElementById('6in4Div').style.display='none';
+			document.getElementById('6to4Div').style.display='none';
+		}
+		if (1) document.getElementById('6rdDiv').style.display='none';
+	}
+}
+
+function ipTypeSelection(init)
+{
+	if ( document.ethwan.ipMode[0].checked ) {
+		enableFixedIpInput();
+		showDhcpOptSettings(0);
+	} else {
+		disableFixedIpInput();
+		showDhcpOptSettings(1);
+	}
+	
+	if (init == 0) 
+	{
+		if ( document.ethwan.ipMode[0].checked )
+			document.ethwan.dnsMode[1].checked = true;
+		else
+			document.ethwan.dnsMode[0].checked = true;
+		dnsModeClicked();
+
+		if (1) {
+			if ( document.ethwan.ipMode[0].checked )
+				document.ethwan.SixrdMode[1].checked = true;
+			else
+				document.ethwan.SixrdMode[0].checked = true;
+			SixrdModeClicked();
+		}
+		v6inv4TunnelSel();
+	}
+}
+
+function enable_pppObj()
+{
+	enableTextField(document.ethwan.pppUserName);
+	enableTextField(document.ethwan.pppPassword);
+	enableTextField(document.ethwan.pppConnectType);
+	document.ethwan.gwStr[0].disabled = false;
+	document.ethwan.gwStr[1].disabled = false;
+	enableTextField(document.ethwan.dstGtwy);
+	document.ethwan.wanIf.disabled = false;
+	pppTypeSelection();
+	autoDGWclicked();
+}
+
+function pppSettingsEnable()
+{
+	document.getElementById('tbl_ppp').style.display='block';
+	v6inv4TunnelSel();
+	enable_pppObj();
+}
+
+function disable_pppObj()
+{
+	disableTextField(document.ethwan.pppUserName);
+	disableTextField(document.ethwan.pppPassword);
+	disableTextField(document.ethwan.pppIdleTime);
+	disableTextField(document.ethwan.pppConnectType);
+
+	document.ethwan.gwStr[0].disabled = true;
+	document.ethwan.gwStr[1].disabled = true;
+	disableTextField(document.ethwan.dstGtwy);
+	document.ethwan.wanIf.disabled = true;
+}
+
+function pppSettingsDisable()
+{
+	document.getElementById('tbl_ppp').style.display='none';
+	v6inv4Disable();
+	disable_pppObj();
+}
+
+function enable_ipObj()
+{
+	document.ethwan.ipMode[0].disabled = false;
+	document.ethwan.ipMode[1].disabled = false;
+	document.ethwan.gwStr[0].disabled = false;
+	document.ethwan.gwStr[1].disabled = false;
+	enableTextField(document.ethwan.dstGtwy);
+	document.ethwan.wanIf.disabled = false;
+	ipTypeSelection(1);
+	autoDGWclicked();
+}
+
+function ipSettingsEnable()
+{
+	//if (ipver == 2)
+	//	return;
+	document.getElementById('tbl_ip').style.display='block';
+	v6inv4TunnelSel();
+	enable_ipObj();
+}
+
+function disable_ipObj()
+{
+	document.ethwan.ipMode[0].disabled = true;
+	document.ethwan.ipMode[1].disabled = true;
+	document.ethwan.gwStr[0].disabled = true;
+	document.ethwan.gwStr[1].disabled = true;
+	disableTextField(document.ethwan.dstGtwy);
+	document.ethwan.wanIf.disabled = true;
+	disableFixedIpInput();
+}
+
+function ipSettingsDisable()
+{
+	document.getElementById('tbl_ip').style.display='none';
+	v6inv4Disable();
+	showDhcpOptSettings(0);
+	disable_ipObj();
+}
+
+function showDuidType2(show)
+{
+	if(show == 1)
+	{
+		document.getElementById('duid_t2_ent').style.display = '';
+		document.getElementById('duid_t2_id').style.display = '';
+	}
+	else
+	{
+		document.getElementById('duid_t2_ent').style.display = 'none';
+		document.getElementById('duid_t2_id').style.display = 'none';
+	}
+}
+
+function showDhcpOptSettings(show)
+{
+	var dhcp_opt = document.getElementById('tbl_dhcp_opt');
+
+	if(dhcp_opt == null)
+		return ;
+
+	if(show == 1)
+	{
+		document.getElementById('tbl_dhcp_opt').style.display='block';
+
+		if(document.ethwan.duid_type[1].checked == true)
+			showDuidType2(1);
+		else
+			showDuidType2(0);
+	}
+	else
+		document.getElementById('tbl_dhcp_opt').style.display='none';
+}
+
+function ipModeSelection()
+{
+	if (document.ethwan.ipUnnum.checked) {
+		disable_pppObj();
+		disable_ipObj();
+		document.ethwan.gwStr[0].disabled = false;
+		document.ethwan.gwStr[1].disabled = false;
+		enableTextField(document.ethwan.dstGtwy);
+		document.ethwan.wanIf.disabled = false;
+	}
+	else
+		enable_ipObj();
+}
+
+function updateBrMode(isLinkChanged)
+{
+	var brmode_ops = document.getElementById('brmode');
+
+	if(!brmode_ops)
+		return ;
+
+	// reset to transparent bridge
+	if(!isLinkChanged)
+	{
+		document.ethwan.br.checked = false;
+		brmode_ops.value = 0;
+		brmode_ops.disabled = true;
+	}
+
+	if(document.ethwan.adslConnectionMode.value == 0)
+	{
+		document.getElementById('br_row').style.display = "none";
+		brmode_ops.disabled = false;
+		if(brmode_ops.value == '') brmode_ops.selectedIndex = 0;
+	}
+	else
+	{
+		document.getElementById('br_row').style.display = "";
+	}
+}
+
+function brClicked()
+{
+	var brmode_ops = document.getElementById('brmode');
+
+	if(!brmode_ops)
+		return ;
+
+	if(document.ethwan.br.checked) {
+		brmode_ops.disabled = false;
+		if(brmode_ops.value == '') brmode_ops.selectedIndex = 0;
+	} else
+		brmode_ops.disabled = true;
+}
+
+
+function dynamic_create_ipv6_addrmode_options()
+{
+	var addrmode_options_len = document.getElementById("AddrMode").length;
+	var addr_mode = document.ethwan.adslConnectionMode.value;
+	var ipv6_auto_enable = 1;
+	var ipv6_auto_mode_option_name = "Auto Detect Mode";
+
+	if (ipv6_auto_enable == 1)
+	{
+		var get_ipv6_auto_option = 0;
+		for(var i = 0; i < addrmode_options_len; i++)
+		{
+			if (document.getElementById("AddrMode").options[i].value == "32") 
+			{
+				get_ipv6_auto_option = 1;
+			}
+		}
+
+		switch (addr_mode) {
+			case '0':	// bridge mode
+				break;
+			case '1':	// IPOE/1483 MER
+			case '2':	// PPPoE
+			case '3': 	// PPPoA
+			case '4': 	// 1483 Routed
+			case '5': 	// 1577 Routed
+				if (get_ipv6_auto_option != 1)
+				{
+					
+					document.getElementById("AddrMode").options[addrmode_options_len] = new Option(ipv6_auto_mode_option_name, 32);
+				}
+				break;
+			case '8': 	// 6rd
+				break;
+			default:
+				for(var i = 0; i < addrmode_options_len; i++)
+				{
+					if (document.getElementById("AddrMode").options[i].value == "32") 
+					{
+						document.getElementById("AddrMode").remove(i);
+					}
+				}
+				break;
+		}	
+	}
+}
+
+function wanLogicPortSelection()
+{
+	if (0)
+	{
+		var wan_port_mask = 0
+		
+		
+		for(var i=0; i< sw_lan_port_num; i++)
+		{
+			if(wan_port_mask & (0x01 << i))
+			{		
+				if((curlink != null)&&(i == curlink.logic_port)&&(document.ethwan.logic_port.value != curlink.logic_port)&&( curlink.logic_port_wan_num <= 1))
+					document.ethwan.chkpt[i].disabled = false;
+				else
+					document.ethwan.chkpt[i].disabled = "disabled";
+			}
+			else
+			{
+				if(i == document.ethwan.logic_port.value)
+					document.ethwan.chkpt[i].disabled = "disabled";
+				else
+					document.ethwan.chkpt[i].disabled = false;
+			}			
+		}
+	
+	}
+}
+
+function connectionTypeChangeDisplay()
+{
+	with (document.forms[0]) {
+		if( adslConnectionMode.value!=0){
+			document.getElementById('connectionType').style.display = "";
+			document.getElementById('connectionTypeForBridge').style.display = 'none';
+		}
+		else{
+			document.getElementById('connectionTypeForBridge').style.display = "";
+			document.getElementById('connectionType').style.display = 'none';
+		}
+	}
+}
+function NATv6Change()
+{
+	if (document.getElementById('napt_v6').selectedIndex == 2)	{//nptv6 need ndp_proxy
+		document.ethwan.ndp_proxy.disabled = true;
+		document.ethwan.ndp_proxy.checked  = true;
+	}else{
+		document.ethwan.ndp_proxy.disabled = false;
+		document.ethwan.ndp_proxy.checked  = false;
+	}
+}
+function adslConnectionModeSelection(isLinkChanged)
+{
+	document.ethwan.naptEnabled.disabled = false;
+	document.ethwan.igmpEnabled.disabled = false;
+	document.ethwan.mldEnabled.disabled = false;
+	document.ethwan.ipUnnum.disabled = true;
+
+	document.ethwan.droute[0].disabled = false;
+	document.ethwan.droute[1].disabled = false;
+	document.getElementById('tbl_ppp').style.display = 'none';
+	document.getElementById('tbl_ip').style.display = 'none';
+
+	if (document.getElementById('tbl_dhcp_opt') != null)
+		document.getElementById('tbl_dhcp_opt').style.display = 'none';
+
+	if (0) {
+		ipv6SettingsEnable((isLinkChanged==true)?0:1);
+		document.getElementById('tbprotocol').style.display = "";
+		document.ethwan.IpProtocolType.disabled = false;
+	} else if (1){
+	        document.getElementById('tbprotocol').style.display = "none";
+            document.ethwan.IpProtocolType.value = 1;
+    }
+
+	dynamic_create_ipv6_addrmode_options();
+	switch (document.ethwan.adslConnectionMode.value) {
+		case '0':// bridge mode
+			if (1)
+			document.getElementById('tbmtu').style.display = 'none';
+			document.getElementById('tbmtu_pppoe').style.display = 'none';
+			document.ethwan.naptEnabled.disabled = true;
+			document.ethwan.igmpEnabled.disabled = true;
+			document.ethwan.mldEnabled.disabled = true;
+			document.ethwan.droute[0].disabled = true;
+			document.ethwan.droute[1].disabled = true;
+			document.ethwan.IpProtocolType.value = 3;     // IPV4/IPV6
+			pppSettingsDisable();
+			ipSettingsDisable();
+			if(!isLinkChanged)
+				document.ethwan.mtu.value = 2000;
+			if (0) {
+				ipv6SettingsDisable();
+			}
+			// make checkbox 'qosEnalbed' able to be selected in Retailor wan page
+			//if ( 0 ) document.ethwan.qosEnabled.disabled = true;
+			break;
+		case '1'://1483mer
+			var tmp_ctype = document.ethwan.ctype.value;
+			document.getElementById('tbmtu').style.display = '';
+			document.getElementById('tbmtu_pppoe').style.display = 'none';
+			pppSettingsDisable();
+			if (0) {
+				if(document.ethwan.IpProtocolType.value != 2)		// It is not IPv6 only
+					ipSettingsEnable();
+			}
+			else
+				ipSettingsEnable();
+			if(!isLinkChanged)
+				{
+					document.ethwan.naptEnabled.checked = true;
+					document.ethwan.mtu.value = 1500;
+				}
+			break;
+		case '2'://PPPoE
+			var tmp_ctype = document.ethwan.ctype.value;
+			if(!isLinkChanged)
+				document.ethwan.mtu_pppoe.value = 1492;
+			document.getElementById('tbmtu_pppoe').style.display = '';
+			document.getElementById('tbmtu').style.display = 'none';
+			document.getElementById('tbl_ppp').style.display = 'block';
+			ipSettingsDisable();
+			pppSettingsEnable();
+			if(!isLinkChanged)
+				document.ethwan.naptEnabled.checked = true;
+
+			if (1) {
+				document.ethwan.SixrdMode[1].checked = true;	// 6rdMode is Manual
+				document.ethwan.SixrdMode[0].disabled = true;
+				document.ethwan.SixrdMode[1].disabled = true;
+				SixrdModeClicked();
+			}
+			break;
+		default:
+			pppSettingsDisable();
+			ipSettingsEnable();
+	}
+
+	updateBrMode(isLinkChanged);
+	connectionTypeChangeDisplay();
+}
+
+function naptClicked()
+{
+	if (document.ethwan.adslConnectionMode.value == 3) {
+		// Route1483
+		if (document.ethwan.naptEnabled.checked == true) {
+			document.ethwan.ipUnnum.checked = false;
+			document.ethwan.ipUnnum.disabled = true;
+		}
+		else
+			document.ethwan.ipUnnum.disabled = false;
+		ipModeSelection();
+	}
+}
+
+function vlanClicked()
+{
+	if (document.ethwan.vlan.checked)
+	{
+		document.ethwan.vid.disabled = false;
+		document.ethwan.vprio.disabled = false;
+	}
+	else {
+		document.ethwan.vid.disabled = true;
+		document.ethwan.vprio.disabled = true;
+	}
+}
+
+function hideGWInfo(hide) {
+	var status = false;
+
+	if (hide == 1)
+		status = true;
+
+	changeBlockState('gwInfo', status);
+
+	if (hide == 0) {
+		with (document.forms[0]) {
+			if (dgwstatus == 255) {
+				if (isValidIpAddress(gtwy) == true) {
+					gwStr[0].checked = true;
+					gwStr[1].checked = false;
+					dstGtwy.value=gtwy;
+					wanIf.disabled=true
+				} else {
+					gwStr[0].checked = false;
+					gwStr[1].checked = true;
+					dstGtwy.value = '';
+				}
+			}
+			else if (dgwstatus != 239) {
+					gwStr[1].checked = true;
+					gwStr[0].checked = false;
+					wanIf.disabled=false;
+					wanIf.value=dgwstatus;
+					dstGtwy.disabled=true;
+			} else {
+					gwStr[1].checked = false;
+					gwStr[0].checked = true;
+					wanIf.disabled=true;
+					dstGtwy.disabled=false;
+			}
+		}
+	}
+}
+
+function autoDGWclicked() {
+	if (document.ethwan.droute[0].checked == true) {
+		hideGWInfo(1);
+	} else {
+		hideGWInfo(0);
+	}
+}
+
+function gwStrClick() {
+	with (document.forms[0]) {
+		if (gwStr[1].checked == true) {
+			dstGtwy.disabled = true;
+			wanIf.disabled = false;
+		}
+		else {
+			dstGtwy.disabled = false;
+			wanIf.disabled = true;
+		}
+      	}
+}
+
+function wanAddrModeChange(is_user)
+{
+	// initial page status
+	document.getElementById('secIPv6Div').style.display="none";
+	document.getElementById('dhcp6c_block').style.display="none";
+	if (!isLocalWan()) //NOT TR069, VOIP and TR069_VOIP
+	{
+		document.ethwan.iana.disabled = false;
+		document.ethwan.iapd.disabled = false;
+	}else{
+		document.ethwan.iana.disabled = true;
+		document.ethwan.iapd.disabled = true;
+	}
+
+	if(is_user){
+		// default Enable and ReadOnly IA_NA/IA_PD
+		document.ethwan.iapd.checked = true;
+		document.ethwan.iapd.checked = true;
+
+		// default enable DNSv6 Request
+		document.ethwan.dnsV6Mode[0].checked = true;
+		document.ethwan.dnsV6Mode[1].checked = false;
+		dnsModeV6Clicked();
+	}
+
+	if (document.ethwan.AddrMode.value == 0)
+		document.ethwan.AddrMode.value = 1;
+
+	switch(document.ethwan.AddrMode.value)
+	{
+		case '1':  //SLAAC
+			document.getElementById('dhcp6c_block').style.display="";
+
+			if(is_user){
+				document.ethwan.iana.checked=false;
+				if (isLocalWan()) //TR069, VOIP and TR069_VOIP
+					document.ethwan.iapd.checked=false;
+				else
+					document.ethwan.iapd.checked=true;
+			}
+			break;
+		case '2':	//Static
+			document.getElementById('secIPv6Div').style.display='';
+
+			if(is_user){
+				document.ethwan.iana.checked=false;
+				document.ethwan.iapd.checked=false;
+			}
+			break;
+		case '16': //DHCP
+			document.getElementById('dhcp6c_block').style.display='';
+
+			if(is_user){
+				document.ethwan.iana.checked=true;
+				if (isLocalWan()) //TR069, VOIP and TR069_VOIP
+					document.ethwan.iapd.checked=false;
+				else
+					document.ethwan.iapd.checked=true;
+			}
+			break;
+		case '32':	//IPv6 WAN Auto Detect Mode
+			document.getElementById('dhcp6c_block').style.display="";
+
+			if(is_user){
+				document.ethwan.iana.checked=true;
+				if (isLocalWan()) //TR069, VOIP and TR069_VOIP
+					document.ethwan.iapd.checked=false;
+				else
+					document.ethwan.iapd.checked=true;
+			}
+			break;
+		default:
+	}
+}
+
+function s4over6TypeChange()
+{
+	switch(document.ethwan.s4over6Type.value)
+	{
+		case '1': //dslite
+			if(1){
+				document.getElementById('DSLiteDiv').style.display="block";
+				dsliteSettingChange();
+			}
+			break;
+		case '2': //map-e
+			if (0){
+				document.getElementById('mape_div').style.display="block";
+				mapeSettingChange();
+			}
+			break;
+		case '3': //map-t
+			if (0){
+				document.getElementById('mapt_div').style.display="block";
+				maptSettingChange();
+			}
+			break;
+		case '4': //464xlat
+			if (0){
+				document.getElementById('XLAT464Div').style.display="block";
+				xlat464SettingChange();
+			}
+			break;
+		case '5': //lw4o6
+			if (0){
+				document.getElementById('LW4O6Div').style.display="block";
+				lw4o6SettingChange();
+			}
+			break;
+		default: //0
+			if(1) document.getElementById('DSLiteDiv').style.display="none";
+			if (0) document.getElementById('mape_div').style.display="none";
+			if (0) document.getElementById('mapt_div').style.display="none";
+			if (0) document.getElementById('XLAT464Div').style.display="none";
+			if (0) document.getElementById('LW4O6Div').style.display="none";
+	}
+}
+
+function ipv6WanUpdate(UseDefaultSetting)
+{
+	wanAddrModeChange(UseDefaultSetting);
+}
+
+function ipv6SettingsDisable()
+{
+	document.getElementById('tbipv6wan').style.display="none";
+	document.getElementById('secIPv6Div').style.display="none";
+	document.getElementById('dhcp6c_block').style.display="none";
+	document.getElementById('IPv6DnsDiv').style.display="none";
+	document.getElementById('tbnaptv6').style.display="none";
+	document.getElementById('ndp_proxy').style.display="none";
+	if(1) {
+		document.getElementById('DSLiteDiv').style.display="none";
+		document.getElementById('dslite_mode_div').style.display="none";
+		document.getElementById('dslite_aftr_hostname_div').style.display="none";
+	}
+	
+	//MAP-E
+	if (0){
+		document.getElementById('mape_div').style.display="none";	
+	}
+	//MAP-T
+	if (0){
+		document.getElementById('mapt_div').style.display="none";
+	}
+	//XLAT464
+	if (0){
+		document.getElementById('XLAT464Div').style.display="none";
+	}
+	//LW4O6
+	if(0){
+		document.getElementById('LW4O6Div').style.display="none";
+	}
+}
+
+function ipv6SettingsEnable(UseDefaultSetting)
+{
+	if(document.ethwan.IpProtocolType.value != 1){
+		document.getElementById('tbipv6wan').style.display="";
+		document.getElementById('IPv6DnsDiv').style.display="";
+		document.getElementById('TrIpv6AddrType').style.display="";
+		if(0){
+			document.getElementById('tbnaptv6').style.display="";
+			NATv6Change();
+		}
+		if(0){
+			document.getElementById('ndp_proxy').style.display="";
+		}
+
+		if (document.ethwan.IpProtocolType.value == 2) { // IPv6 only
+			document.getElementById('div4over6').style.display="block";
+			s4over6TypeChange();
+		}
+		else{
+			document.getElementById('div4over6').style.display="none";
+		}
+		ipv6WanUpdate(UseDefaultSetting);
+  	}
+}
+
+function dsliteSettingChange()
+{
+	with ( document.forms[0] ) 
+	{
+		if(document.ethwan.s4over6Type.value == 1){
+			
+			dslite_mode_div.style.display = '';
+			dsliteAftrModeChange();
+			//hide map-e
+			if(0){
+				document.getElementById('mape_div').style.display="none";
+			}
+			//hide map-t
+			if(0){
+				document.getElementById('mapt_div').style.display="none";
+			}
+			//hide xlat464
+			if(0){
+				document.getElementById('XLAT464Div').style.display="none";
+			}
+			//hide lw4o6
+			if(0){
+				document.getElementById('LW4O6Div').style.display="none";
+			}
+		}	
+	}	
+}
+
+function dsliteAftrModeChange()
+{
+
+	with ( document.forms[0] ) 
+	{
+		document.getElementById('dslite_aftr_hostname_div').style.display="none";
+		if (dslite_aftr_mode[1].checked == true) {
+			document.getElementById('dslite_aftr_hostname_div').style.display="";
+			if(dslite_aftr_hostname.value == "::") //clear the value
+				dslite_aftr_hostname.value ="";
+		}
+	}
+
+}
+
+function xlat464SettingChange(){
+	with( document.forms[0] )
+	{
+		if(document.ethwan.s4over6Type.value == 4){
+			xlat464_clatmode_div.style.display="block";
+			//xlat464 clat prefix6 mode: dhcpv6pd/static
+			xlat464ClatPrefix6ModeChange();
+			//display xlat464 plat prefix6
+			document.getElementById('xlat464_platprefix6_div').style.display="block";
+
+			//hide dslite
+			if(1){
+				document.getElementById('DSLiteDiv').style.display="none";
+			}
+			//hide map-e
+			if(0){
+				document.getElementById('mape_div').style.display="none";
+			}
+			//hide map-t
+			if(0){
+				document.getElementById('mapt_div').style.display="none";
+			}
+			//hide lw4o6
+			if(0){
+				document.getElementById('LW4O6Div').style.display="none";
+			}
+		}
+	}
+}
+
+function xlat464ClatPrefix6ModeChange(){
+	with( document.forms[0] )
+	{
+		document.getElementById('xlat464_clatprefix6_div').style.display="none";
+		if(xlat464_plat_prefix6.value == "::") //clear the value
+			xlat464_plat_prefix6.value ="";
+		if(xlat464_clat_mode[1].checked){
+			document.getElementById('xlat464_clatprefix6_div').style.display="block";
+			if(xlat464_clat_prefix6.value == "::") //clear the value
+				xlat464_clat_prefix6.value ="";
+		}
+	}
+}
+
+function lw4o6SettingChange(){
+	with( document.forms[0] )
+	{
+		if(document.ethwan.s4over6Type.value == 5){
+			lw4o6_mode_div.style.display="block";
+			lw4o6ModeChange();
+
+			//hide dslite
+			if(1){
+				document.getElementById('DSLiteDiv').style.display="none";
+			}
+			//hide map-e
+			if(0){
+				document.getElementById('mape_div').style.display="none";
+			}
+			//hide map-t
+			if(0){
+				document.getElementById('mapt_div').style.display="none";
+			}
+			//hide xlat464
+			if(0){
+				document.getElementById('XLAT464Div').style.display="none";
+			}
+
+		}
+	}
+}
+
+function lw4o6ModeChange()
+{
+	with ( document.forms[0] )
+	{
+		document.getElementById('lw4o6_static_div').style.display="none";
+		if (lw4o6_mode[1].checked == true) {
+			document.getElementById('lw4o6_static_div').style.display="block";
+			lw4o6_static_div.style.display = 'block';
+			if(lw4o6_aftr_addr.value == "::") //clear the value
+				lw4o6_aftr_addr.value ="";
+			if(lw4o6_local_v6Prefix.value == "::")
+				lw4o6_local_v6Prefix.value ="";
+			if(lw4o6_local_v6PrefixLen.value == "0")
+				lw4o6_local_v6PrefixLen.value ="";
+			if(lw4o6_v4addr.value == "0.0.0.0")
+				lw4o6_v4addr.value ="";
+			if(lw4o6_psid_len.value == "0")
+				lw4o6_psid_len.value ="";
+			if(lw4o6_psid.value == "0x0")
+				lw4o6_psid.value ="";
+		}
+	}
+}
+
+function v6TunnelChange()
+{
+	with ( document.forms[0] )
+	{
+		switch(document.ethwan.v6TunnelType.value)
+		{
+			case '1':  //6rd
+				document.ethwan.AddrMode.value =1;   			// IPV6_WAN_AUTO
+				document.ethwan.dnsV6Mode[1].checked = true;  	//IPv6 DNS request is disable
+				if (1) document.getElementById('6rdDiv').style.display='';
+				if (1) {
+					document.getElementById('6in4Div').style.display='none';
+					document.getElementById('6to4Div').style.display='none';
+				}
+				break;
+			case '2':	//6in4
+				document.ethwan.AddrMode.value =2;						// IPV6_WAN_STATIC
+				if (1) document.getElementById('6rdDiv').style.display='none'; // close 6rd setting page.
+				if (1) {
+					document.getElementById('6in4Div').style.display='';
+					document.getElementById('6to4Div').style.display='none';
+					dnsModeV6Clicked6in4();
+				}
+				break;
+			case '3':	//6to4
+				document.ethwan.AddrMode.value =1;   		// IPV6_WAN_AUTO
+				document.ethwan.dnsV6Mode[1].checked = true;  //IPv6 DNS request is disable
+				if (1) document.getElementById('6rdDiv').style.display='none'; // close 6rd setting page.
+				if (1) {
+					document.getElementById('6in4Div').style.display='none';
+					document.getElementById('6to4Div').style.display='';
+				}
+				break;
+			default:
+				if (1) document.getElementById('6rdDiv').style.display='none'; // close 6rd setting page.
+				if (1) {
+					document.getElementById('6in4Div').style.display='none';
+					document.getElementById('6to4Div').style.display='none';
+				}
+				break;
+		}
+	}
+}
+
+//MAP-E Begin
+function mapeSettingChange()
+{
+	with ( document.forms[0] ) 
+	{
+		if(document.ethwan.s4over6Type.value == 2){
+			if (mape_routing_mode_support){
+				mape_forward_mode_div.style.display = 'block';
+			}
+			mape_mode_div.style.display = 'block';
+			mapeModeChange();
+
+			//hide dslite
+			if(1){
+				document.getElementById('DSLiteDiv').style.display="none";
+			}
+			//hide MAP-T
+			if(0){
+				document.getElementById('mapt_div').style.display="none";
+			}
+			//hide xlat464
+			if(0){
+				document.getElementById('XLAT464Div').style.display="none";
+			}
+			//hide lw4o6
+			if(0){
+				document.getElementById('LW4O6Div').style.display="none";
+			}
+		}	
+	}
+}
+
+function mapeForwardModeChange(){
+	with ( document.forms[0] ) 
+	{
+		if(mape_forward_mode[1].checked == true){//Routing
+			document.ethwan.mape_forward_mode.value = "1";					
+		}	
+		else{//NAT
+			document.ethwan.mape_forward_mode.value = "0";		
+		}	
+	}	
+}
+
+//MAP-T Begin
+function maptSettingChange()
+{
+	with ( document.forms[0] )
+	{
+		if(document.ethwan.s4over6Type.value == 3){
+			mapt_mode_div.style.display = 'block';
+			maptModeChange();
+
+			//hide dslite
+			if(1){
+				document.getElementById('DSLiteDiv').style.display="none";
+			}
+			//hide MAP-E
+			if(0){
+				document.getElementById('mape_div').style.display="none";
+			}
+			//hide xlat464
+			if(0){
+				document.getElementById('XLAT464Div').style.display="none";
+			}
+			//hide lw4o6
+			if(0){
+				document.getElementById('LW4O6Div').style.display="none";
+			}
+		}
+	}
+}
+
+function mapeModeChange()
+{
+	with ( document.forms[0] ) 
+	{
+		var mape_mode_val =mape_mode.value;		
+		switch(mape_mode_val){
+			case '0': //DHCP
+				mape_static_div.style.display = 'none';
+				//mape_fmr_tbl_div.style.display = "none";
+				break;
+			case '1': //Static
+				mape_static_div.style.display = 'block';
+				//mape_fmr_tbl_div.style.display = "block";
+				if(mape_local_v6Prefix.value == "::") //clear the value
+					mape_local_v6Prefix.value ="";
+				if(mape_local_v6PrefixLen.value == "0")
+					mape_local_v6PrefixLen.value ="";
+				if(mape_remote_v6Addr.value == "::")
+					mape_remote_v6Addr.value ="";
+				if(mape_local_v4Addr.value == "0.0.0.0")
+					mape_local_v4Addr.value ="";
+				if(mape_local_v4MaskLen.value == "0")
+					mape_local_v4MaskLen.value ="";
+				if(mape_psid_offset.value == "0")
+					mape_psid_offset.value ="";
+				if(mape_psid_len.value == "0")
+					mape_psid_len.value ="";
+				if(mape_psid.value == "0x0")
+					mape_psid.value ="";
+				break;
+			default:
+				break;
+		}
+	}
+}
+
+//MAP-T
+function maptModeChange()
+{
+	with ( document.forms[0] )
+	{
+		var mapt_mode_val =mapt_mode.value;
+		switch(mapt_mode_val){
+			case '0': //DHCP
+				mapt_static_div.style.display = 'none';
+				break;
+			case '1': //Static
+				mapt_static_div.style.display = 'block';
+				if(mapt_local_v6Prefix.value == "::") //clear the value
+					mapt_local_v6Prefix.value ="";
+				if(mapt_local_v6PrefixLen.value == "0")
+					mapt_local_v6PrefixLen.value ="";
+				if(mapt_remote_v6Prefix.value == "::")
+					mapt_remote_v6Prefix.value ="";
+				if(mapt_remote_v6PrefixLen.value == "0")
+					mapt_remote_v6PrefixLen.value ="";
+				if(mapt_local_v4Addr.value == "0.0.0.0")
+					mapt_local_v4Addr.value ="";
+				if(mapt_local_v4MaskLen.value == "0")
+					mapt_local_v4MaskLen.value ="";
+				if(mapt_psid_offset.value == "0")
+					mapt_psid_offset.value ="";
+				if(mapt_psid_len.value == "0")
+					mapt_psid_len.value ="";
+				if(mapt_psid.value == "0x0")
+					mapt_psid.value ="";
+				break;
+			default:
+				break;
+		}
+	}
+}
+
+function mapeEnableFMR()
+{
+	with ( document.forms[0] ) 
+	{
+		if(mape_fmr_enabled.checked == true){
+			document.ethwan.mape_fmr_enabled.value = "1";	
+			if (document.getElementById('mape_fmr_list_show') != null)
+				document.getElementById('mape_fmr_list_show').style.display="block";
+		}	
+		else{
+			document.ethwan.mape_fmr_enabled.value = "0";
+			if (document.getElementById('mape_fmr_list_show') != null)
+				document.getElementById('mape_fmr_list_show').style.display="none";
+		}	
+	}	
+}
+
+function mapeFmrListShow(obj){
+	var tmplst = "";
+	
+	if (document.ethwan.lkname.value == "new" )
+	{		
+		alert('This is a new link, please add the link first!');
+		return false;
+	}
+	
+	tmplst = curlink.name;
+	document.ethwan.lst.value = tmplst;
+
+	obj.isclick = 1;
+	postTableEncrypt(document.forms[0].postSecurityFlag, document.forms[0]);
+	
+	return true;
+}
+
+//MAP-E End
+function protocolChange(UseDefaultSetting)
+{
+	ipver = document.ethwan.IpProtocolType.value;
+	connectionMode = document.ethwan.adslConnectionMode.value;
+
+	ipSettingsDisable();
+	ipv6SettingsDisable();
+	v6inv4Disable();
+	
+	if (ipver == 1)//ipv4 only
+	{
+        	if ((connectionMode == 1) || (connectionMode == 4) || (connectionMode == 5) || (connectionMode == 8) )
+        	{
+				ipSettingsEnable();
+        	}
+			if (connectionMode == 2) {		// PPPoE
+				v6inv4TunnelSel();
+				if (1) {
+					document.ethwan.SixrdMode[0].disabled = true;
+					document.ethwan.SixrdMode[1].disabled = true;
+					SixrdModeClicked();
+				}
+			}
+   	}
+   	else if (ipver == 2) //IPV6 only
+   	{
+   		if ((connectionMode != 0)  &&(connectionMode != 8))   //Not bridge mode and 6rd
+   		{
+			ipv6SettingsEnable(UseDefaultSetting);
+   		}
+	}
+	else 
+	{
+		if (connectionMode != 0)
+		{
+	        	if ((connectionMode == 1) || (connectionMode == 4) || (connectionMode == 5)  || (connectionMode == 8) )
+        		{
+				ipSettingsEnable();
+        		}
+			if ((connectionMode == 1) || (connectionMode == 2) || (connectionMode == 4)  || (connectionMode == 5) )
+			{
+				ipv6SettingsEnable(UseDefaultSetting);
+			}
+		}
+	}
+}
+
+
+function on_linkchange(itlk)
+{
+	var pmchkpt = document.getElementById("tbl_pmap");
+	temp_user_mvid_value = 0;	
+	
+	with ( document.forms[0] )
+	{
+		if (0)
+			var wan_port_mask = 0
+		if(itlk == null)
+		{
+			mtu.value=1500;
+			//select
+			adslConnectionMode.value = pppConnectType.value = 0;
+			//wan_port
+			if (0)
+			{
+				for(var i=0; i< sw_lan_port_num; i++)
+				{
+					if(wan_port_mask & (0x01 << i))
+						logic_port.options[i].disabled = true;
+					else
+					{
+						logic_port.options[i].disabled = false;
+						logic_port.value= i;
+					}
+				}
+				//logic_port.value= 0 -1;
+			}
+			if(0)
+			{
+				phy_rate.value = 0;
+			}
+
+			if(typeof brmode != "undefined") // "undefined" refer to an object is not defined and defined but without a value. Be careful!
+				brmode.value = 0;
+
+			if(1)
+			IpProtocolType.value = 1;
+			if (0)
+			AddrMode.value = 1;
+			if (1) {
+				SixrdMode[0].checked = true;
+				SixrdBRv4IP.value = "";
+				SixrdIPv4MaskLen.value = "";
+				SixrdPrefix.value = "";
+				SixrdPrefixLen.value = "";
+			}
+			// ctype
+			ctype.value = 2;
+
+			if (1)
+				v6TunnelType.value = 0;
+			if (1) {
+				dnsV6Mode6in4[1].checked =true;
+			}
+
+			//radio
+			ipMode[0].checked = droute[0].checked = dnsMode[1].checked = dnsV6Mode[1].checked =true;
+			chEnable[0].checked = true;
+			dslite_aftr_mode[0].checked = true;
+			if(typeof duid_type !== 'undefined')
+				duid_type[1].checked = true;
+
+			//checkbox
+			naptEnabled.checked = vlan.checked = igmpEnabled.checked = mldEnabled.checked = false;
+			if(typeof enable_opt_60 !== 'undefined')
+				enable_opt_60.checked = enable_opt_61.checked = enable_opt_125.checked = false;
+
+			//input number
+			vprio.value = vid.value = "0";
+			vid.value = "";
+			//input muticast vid
+			multicast_vid.value = "";
+
+			//macclone
+			macclone.value = "0";
+			document.getElementById("tb_macclone").style.display = "none";
+			maccloneaddr.value = "";
+			
+			//input ip
+			ip.value = remoteIp.value = "0.0.0.0";
+			netmask.value = "255.255.255.0";
+
+
+			//input text
+			pppUserName.value = pppPassword.value = acName.value = serviceName.value = dns1.value = dns2.value = "";
+			auth.value = 0;
+
+			//checkbox
+			Ipv6Addr.value = "";
+			Ipv6PrefixLen.value = "";
+			Ipv6Gateway.value = "";
+			dnsV6Mode[0].checked = true;
+			disableDNSv6Input();
+
+			iana.checked = true;
+			iapd.checked = false;
+
+			if(typeof document.ethwan.br != "undefined") // "undefined" refer to an object is not defined and defined but without a value. Be careful!
+				document.ethwan.br.checked = false;
+
+			//port mapping
+			if (pmchkpt)
+			{
+				if (0)
+				{
+					for (var i = 0; i < (sw_lan_port_num+10); i++) {
+						
+						if (!chkpt[i])
+							break;
+						chkpt[i].checked = false;
+					}
+				}
+				else
+				{
+					for (var i = 0; i < 14; i++) {
+						
+						if (!chkpt[i])
+							break;
+						chkpt[i].checked = false;
+					}
+				}
+			}	
+		}
+		else
+		{
+			//sji_onchanged(document, itlk);
+			mtu.value=itlk.mtu;
+			mtu_pppoe.value=itlk.mtu_pppoe;
+			//wan_port
+			if (0)
+			{
+				for(var i=0; i< sw_lan_port_num; i++)
+				{
+					if((wan_port_mask & (0x01 << i))&&(i != itlk.logic_port))
+						logic_port.options[i].disabled = true;
+					else
+						logic_port.options[i].disabled = false;
+				}
+				logic_port.value=itlk.logic_port;
+			}
+			//wan limit rate
+			if (0)
+			{
+				phy_rate.value=itlk.phy_rate;
+			}
+			
+			//select
+			adslConnectionMode.value = itlk.cmode;
+			if (0)
+			{
+				AddrMode.value = itlk.AddrMode;
+				IpProtocolType.value = itlk.IpProtocol;
+				v6TunnelType.value = itlk.v6TunnelType;
+			}
+			//ctype
+			if (itlk.cmode == 0)
+				ctypeForBridge.value = itlk.applicationtype;
+			else
+				ctype.value = itlk.applicationtype;
+
+			//brmode
+			if(document.ethwan.br)
+			{
+				document.ethwan.br.checked = false;
+				if(itlk.brmode == 2 || itlk.brmode == 0)
+				{
+					// Disable Bridge
+					brmode.value = 0;
+					brmode.disabled = true;
+				}
+				else
+				{
+					// Enable Bridge
+					if(itlk.cmode != 0)
+						document.ethwan.br.checked = true;
+
+					brmode.value = itlk.brmode;
+					brmode.disabled = false;
+				}
+			}
+			macclone.value = itlk.macclone_enable;
+			if(macclone.value == 0){
+				document.getElementById("tb_macclone").style.display = "none";
+			}
+			else
+			{
+				document.getElementById("tb_macclone").style.display = "";
+				maccloneaddr.value = itlk.macclone_addr;
+			}
+			//checkbox
+			if (itlk.napt == 1)
+				naptEnabled.checked = true;
+			else
+				naptEnabled.checked = false;
+			if (itlk.enableIGMP == 1)
+				igmpEnabled.checked = true;
+			else
+				igmpEnabled.checked = false;
+			if (itlk.enableMLD == 1)
+				mldEnabled.checked = true;
+			else
+				mldEnabled.checked = false;
+			mtu.value = itlk.mtu;
+			mtu_pppoe.value = itlk.mtu_pppoe;
+			if (itlk.vlan == 1)
+			{
+				vlan.checked = true;
+				vid.value = itlk.vid;
+				vprio.value = itlk.vprio;
+			}
+			else
+			{
+				vlan.checked = false;
+			}
+			
+			
+			if(1) {
+				if (itlk.applicationtype == 1 || itlk.applicationtype == 8 || itlk.applicationtype == 9)
+					document.getElementById("multicast_vid_tr").style.display = "none";
+				else
+				{
+					document.getElementById("multicast_vid_tr").style.display = "";
+					if (itlk.mVid == 0) 
+						multicast_vid.value = "";
+					else
+						multicast_vid.value = itlk.mVid;
+				}
+			}
+
+			//radio
+			if (itlk.dgw == 1)
+				droute[1].checked = true;
+			else
+				droute[0].checked = true;
+			if (itlk.enable == 1)
+				chEnable[0].checked = true;
+			else
+				chEnable[1].checked = true;
+
+			//radio
+			if(itlk.cmode != 0)//not bridge
+			{
+				if(1)
+				{
+				IpProtocolType.value = itlk.IpProtocol;
+				v6TunnelType.value = itlk.v6TunnelType;
+				s4over6Type.value = itlk.s4over6Type;
+				if (IpProtocolType.value != 1 || v6TunnelType.value == 1 || v6TunnelType.value == 2 || v6TunnelType.value == 3)
+				{
+					if (itlk.AddrMode & 2)
+					{
+						Ipv6Addr.value = itlk.Ipv6Addr;
+						Ipv6PrefixLen.value = itlk.Ipv6AddrPrefixLen;
+						Ipv6Gateway.value = itlk.RemoteIpv6Addr;
+					}
+					else
+					{
+						Ipv6Addr.value = "";
+						Ipv6PrefixLen.value = "";
+						Ipv6Gateway.value = "";
+					}
+
+					if (itlk.dnsv6Mode == 1) 
+					{
+						dnsV6Mode[0].checked = true;
+						disableDNSv6Input();
+					}
+					else
+					{
+						dnsV6Mode[1].checked = true;
+						dnsModeV6Clicked();
+					}
+					Ipv6Dns1.value = itlk.Ipv6Dns1;
+					Ipv6Dns2.value = itlk.Ipv6Dns2;
+
+					if (1) {
+						if (v6TunnelType.value == 1)  // 6rd
+						{
+							Ipv6Dns16rd.value = itlk.Ipv6Dns1;
+							Ipv6Dns26rd.value = itlk.Ipv6Dns2;
+						}
+						else {
+							Ipv6Dns16rd.value = "";
+							Ipv6Dns26rd.value = "";
+						}
+
+						if (v6TunnelType.value == 2)  // 6in4
+						{
+							Ipv6Addr6in4.value = itlk.Ipv6Addr;
+							Ipv6PrefixLen6in4.value = itlk.Ipv6AddrPrefixLen;
+							Ipv6Gateway6in4.value = itlk.RemoteIpv6Addr;
+							v6TunnelRv4IP6in4.value = itlk.v6TunnelRv4IP;
+
+							if (itlk.dnsv6Mode == 1)
+							{
+								dnsV6Mode6in4[0].checked = true;
+								disableDNSv6Input6in4();
+							}
+							else
+							{
+								dnsV6Mode6in4[1].checked = true;
+								dnsModeV6Clicked6in4();
+							}
+							Ipv6Dns16in4.value = itlk.Ipv6Dns1;
+							Ipv6Dns26in4.value = itlk.Ipv6Dns2;
+							}
+						else
+						{
+							Ipv6Addr6in4.value = "";
+							Ipv6PrefixLen6in4.value = "";
+							Ipv6Gateway6in4.value = "";
+							Ipv6Dns16in4.value = "";
+							Ipv6Dns26in4.value = "";
+							dnsV6Mode6in4[0].checked = true;
+							dnsV6Mode6in4[1].checked = false;
+						}
+
+						if (v6TunnelType.value == 3)  // 6to4
+						{
+							v6TunnelRv4IP6to4.value = itlk.v6TunnelRv4IP;
+							Ipv6Dns16to4.value = itlk.Ipv6Dns1;
+							Ipv6Dns26to4.value = itlk.Ipv6Dns2;
+						}
+						else {
+							v6TunnelRv4IP6to4.value = "";
+							Ipv6Dns16to4.value = "";
+							Ipv6Dns26to4.value = "";
+						}
+					}
+
+//					if (itlk.Ipv6Dhcp)
+//					{
+						if (itlk.Ipv6DhcpRequest & 1)
+							iana.checked = true;
+						else
+							iana.checked = false;
+						if (itlk.Ipv6DhcpRequest & 2)
+							iapd.checked = true;
+						else
+							iapd.checked = false;
+//					}
+					napt_v6.selectedIndex = itlk.napt_v6;
+					ndp_proxy.checked = itlk.ndp_proxy;
+					
+					// DS-Lite
+					if ((1) && (IpProtocolType.value == 2)) { // IPv6 only
+						if (itlk.dslite_aftr_mode == 0)
+							dslite_aftr_mode[0].checked = true;
+						else
+							dslite_aftr_mode[1].checked = true;
+						dslite_aftr_hostname.value = itlk.dslite_aftr_hostname;
+					}
+
+					// MAP-E
+					if ((0) && (IpProtocolType.value == 2)) { // IPv6 only
+						if (itlk.mape_enable == 1){
+							mapeSettingChange();
+							
+							//nat mode
+							if (mape_routing_mode_support){
+								if (itlk.mape_forward_mode == 1)//Routing mode
+									mape_forward_mode[1].checked = true;
+								else //NAT mode
+									mape_forward_mode[0].checked = true;
+								mapeForwardModeChange();
+							}	
+							mape_mode.value = itlk.mape_mode;
+							mapeModeChange();
+							if (mape_mode.value == 1){//static
+								//DMR
+								mape_remote_v6Addr.value = itlk.mape_remote_v6Addr;
+								
+								//BMR	
+								mape_local_v6Prefix.value = itlk.mape_local_v6Prefix;
+								mape_local_v6PrefixLen.value = itlk.mape_local_v6PrefixLen;
+								mape_local_v4Addr.value = itlk.mape_local_v4Addr;
+								mape_local_v4MaskLen.value = itlk.mape_local_v4MaskLen;
+								mape_psid_offset.value = itlk.mape_psid_offset;
+								mape_psid_len.value = itlk.mape_psid_len;
+								mape_psid.value = Dec_toHex(itlk.mape_psid);
+								//FMR
+								if (itlk.mape_fmr_enabled == 0)
+									mape_fmr_enabled.checked = false;
+								else
+									mape_fmr_enabled.checked = true;
+								mapeEnableFMR();
+							}
+							
+						}
+					}
+
+					// MAP-T
+					if ((0) && (IpProtocolType.value == 2)) { // IPv6 only
+						if(itlk.mapt_enable){
+							mapt_mode.value = itlk.mapt_mode;
+							mapt_local_v6Prefix.value = itlk.mapt_local_v6Prefix;
+							mapt_local_v6PrefixLen.value = itlk.mapt_local_v6PrefixLen;
+							mapt_remote_v6Prefix.value = itlk.mapt_remote_v6Prefix;
+							mapt_remote_v6PrefixLen.value = itlk.mapt_remote_v6PrefixLen;
+							mapt_local_v4Addr.value = itlk.mapt_local_v4Addr;
+							mapt_local_v4MaskLen.value = itlk.mapt_local_v4MaskLen;
+							mapt_psid_offset.value = itlk.mapt_psid_offset;
+							mapt_psid_len.value = itlk.mapt_psid_len;
+							mapt_psid.value = Dec_toHex(itlk.mapt_psid);
+						}
+					}
+
+					// XLAT464
+					if ((0) && (IpProtocolType.value == 2)) {
+						if (itlk.xlat464_clat_mode == 0)
+							xlat464_clat_mode[0].checked = true;
+						else
+							xlat464_clat_mode[1].checked = true;
+						if(xlat464_clat_mode.value == 1)//static
+							xlat464_clat_prefix6.value = itlk.xlat464_clat_prefix6;
+						xlat464_plat_prefix6.value = itlk.xlat464_plat_prefix6;
+					}
+
+					// lw4o6
+					if ((0) && (IpProtocolType.value == 2)) {
+						if (itlk.lw4o6_mode == 0)
+							lw4o6_mode[0].checked = true;
+						else
+							lw4o6_mode[1].checked = true;
+						if(lw4o6_mode.value == 1){//static
+							lw4o6_aftr_addr.value = itlk.lw4o6_aftr_addr;
+							lw4o6_local_v6Prefix.value = itlk.lw4o6_local_v6Prefix;
+							lw4o6_local_v6PrefixLen.value = itlk.lw4o6_local_v6PrefixLen;
+							lw4o6_v4addr.value = itlk.lw4o6_v4addr;
+							lw4o6_psid_len.value = itlk.lw4o6_psid_len;
+							lw4o6_psid.value = Dec_toHex(itlk.lw4o6_psid);
+						}
+					}
+
+					// 6rd
+					if (itlk.AddrMode & 8)
+					{
+						SixrdBRv4IP.value = itlk.SixrdBRv4IP;
+						SixrdIPv4MaskLen.value = itlk.SixrdIPv4MaskLen;
+						SixrdPrefix.value = itlk.SixrdPrefix;
+						SixrdPrefixLen.value = itlk.SixrdPrefixLen;
+						ip.value = itlk.ipAddr;
+						remoteIp.value = itlk.remoteIpAddr;
+						netmask.value = itlk.netMask;
+						if (itlk.SixrdMode == 1) {
+							SixrdMode[0].checked = true;
+							SixrdBRv4IP.value = "";
+							SixrdIPv4MaskLen.value = "";
+							SixrdPrefix.value = "";
+							SixrdPrefixLen.value = "";
+						}
+						else
+							SixrdMode[1].checked = true;
+					}
+
+				}else{
+					Ipv6Addr.value = "";
+					Ipv6PrefixLen.value = "";
+					Ipv6Gateway.value = "";
+					dnsV6Mode[0].checked = true;
+					disableDNSv6Input();
+					iana.checked = true;
+					iapd.checked = false;
+				}
+				}
+
+				if (itlk.cmode == 1 || itlk.cmode == 8 || itlk.cmode ==9 || itlk.cmode ==10 )//IPoE or 6RD or 6in4
+				{
+					if (itlk.ipDhcp == 1)
+					{
+						ipMode[0].checked = false;
+						ipMode[1].checked = true;
+						ip.value = "";
+						remoteIp.value = "";
+						netmask.value = "";
+					}
+					else
+					{
+						ipMode[0].checked = true;
+						ipMode[1].checked = false;
+						ip.value = itlk.ipAddr;
+						remoteIp.value = itlk.remoteIpAddr;
+						netmask.value = itlk.netMask;
+					}
+					if (itlk.dnsMode == 1)
+							dnsMode[0].checked = true;
+						else
+							dnsMode[1].checked = true;
+					dns1.value = itlk.v4dns1;
+					dns2.value = itlk.v4dns2;
+				}
+				else if (itlk.cmode == 2)
+				{
+					pppUserName.value = decode64(itlk.pppUsername);
+					pppUserName.value = unescapeHTML(pppUserName.value);
+					pppPassword.value = decode64(itlk.pppPassword);
+					pppConnectType.value = itlk.pppCtype;
+					pppIdleTime.value = itlk.pppIdleTime;
+					auth.value = itlk.pppAuth;
+					acName.value = itlk.pppACName;
+					serviceName.value = itlk.pppServiceName;
+				}
+				if(1)
+				protocolChange(0);
+			}
+
+			//DHCP options
+			if(typeof enable_opt_60 !== 'undefined')
+			{
+				//assume all other elements are existed if enable_opt_60 is existed
+
+				if(itlk.enable_opt_60)
+					enable_opt_60.checked = true;
+
+				opt60_val.value = itlk.opt60_val;
+
+				if(itlk.enable_opt_61)
+					enable_opt_61.checked = true;
+
+				iaid.value = itlk.iaid;
+
+				if(itlk.duid_type == 0)
+					duid_type[0].checked = true;
+				else
+					duid_type[itlk.duid_type - 1].checked = true;
+				duid_ent_num.value = itlk.duid_ent_num;
+				duid_id.value = itlk.duid_id;
+
+				if(itlk.enable_opt_125)
+					enable_opt_125.checked = true;
+
+				manufacturer.value = itlk.manufacturer;
+				product_class.value = itlk.product_class;
+				model_name.value = itlk.model_name;
+				serial_num.value = itlk.serial_num;
+			}
+			//port mapping
+			if (pmchkpt)
+			{
+				if (0)
+				{
+					for (var i = 0; i < (sw_lan_port_num+10); i++) {
+						
+						if (!chkpt[i])
+							break;
+						chkpt[i].checked = (itlk.itfGroup & (0x1 << i));
+					}
+				}
+				else
+				{
+					for (var i = 0; i < 14; i++) {
+						
+						if (!chkpt[i])
+							break;
+						chkpt[i].checked = (itlk.itfGroup & (0x1 << i));
+					}
+				}
+				
+			}
+			
+				
+		}
+	}
+	if(1)
+	ipver = document.ethwan.IpProtocolType.value;
+
+	vlanClicked();
+	autoDGWclicked();
+	if (0)
+		wanLogicPortSelection();
+	adslConnectionModeSelection(true);
+	connectionTypeChangeDisplay();
+	v6inv4TunnelSel();
+}
+
+function on_ctrlupdate()
+{
+	if(1)
+			document.getElementById("multicast_vid_tr").style.display = "";
+	with ( document.forms[0] )
+	{
+		if(lkname.value == "new")
+		{
+			curlink = null;
+			on_linkchange(curlink);
+		}
+		else
+		{
+			curlink = links[lkname.value];
+			on_linkchange(curlink);
+		}
+	}
+}
+
+function wan_service_change()
+{
+	temp_user_mvid_value = document.getElementById("multicast_vid").value;
+
+	if(1){
+		dynamic_create_ipv6_addrmode_options();
+		wanAddrModeChange(1);
+	}
+
+	
+	if (isLocalWan()) //TR069, VOIP and TR069_VOIP
+	{
+		if(1)
+			document.getElementById("multicast_vid_tr").style.display = "none";
+	}
+	else
+	{
+		if(1)
+			document.getElementById("multicast_vid_tr").style.display = "";
+		if (curlink.mVid == 0 || temp_user_mvid_value != 0)
+		{
+			
+			document.getElementById("multicast_vid").value = temp_user_mvid_value;
+		}
+		else
+			document.getElementById("multicast_vid").value = curlink.mVid;
+	}
+}
+function wan_macclone_change()
+{
+	var macclone_value = document.ethwan.macclone.value;
+	if (macclone_value == 0)
+	{	
+		document.getElementById("tb_macclone").style.display = "none";
+	}
+	else if(macclone_value == 1)
+	{
+		document.getElementById("tb_macclone").style.display = "";
+	} 
+	else if(macclone_value == 2)
+	{
+		document.getElementById("tb_macclone").style.display = "";
+		document.ethwan.maccloneaddr.value = "";
+	}
+
+}
+
+function on_init()
+{
+	sji_docinit(document, cgi);
+
+	with ( document.forms[0] )
+	{
+		for(var k in links)
+		{
+			var lk = links[k];
+			lkname.options.add(new Option(lk.name, k));
+		}
+		lkname.options.add(new Option("new link", "new"));
+
+		if(links.length > 0) lkname.selectedIndex = 0;
+		on_ctrlupdate();
+	}
+}
+
+
+</script>
+
+</head>
+<body onload="on_init();RegisterClickEvent();">
+<div class="intro_main ">
+	<p class="intro_title">PON WAN</p>
+	<p class="intro_content"> This page is used to configure the parameters for PONWAN</p>
+</div>
+<form action="/boaform/admin/formWanEth" method="POST" name="ethwan">
+<input type="hidden" name="v6TunnelRv4IP" value="">
+<!--<table border="0" cellspacing="4" width="800" style="display:none">
+	<tr>
+		<td>
+			<b>WAN Mode:</b>
+			<span style="display: none"><input type="checkbox" value=1 name="wmchkbox">ATM</span>
+			<span ><input type="checkbox" value=2 name="wmchkbox">Ethernet</span>
+			<span style="display: none"><input type="checkbox" value=4 name="wmchkbox">PTM</span>
+			<span style="display: none"><input type="checkbox" value=8 name="wmchkbox">Bonding</span>&nbsp;&nbsp;&nbsp;&nbsp;
+			<input type="hidden" name="wan_mode" value=0>
+			<input type="submit" value="Submit" name="submitwan" onClick="return SubmitWANMode()">
+		</td>
+	</tr>
+	<tr><td><hr size=1 noshade align=top></td></tr>
+</table>-->
+
+<div class="data_common data_common_notitle">
+<table>
+	<tbody><tr>
+		<th colspan="2"><select name="lkname" onchange="on_ctrlupdate()" size="1"><option value="0">nas0_0</option><option value="1">nas0_1</option><option value="2">nas0_2</option><option value="new">new link</option></select></th>
+	</tr>
+	<tr>
+		<th width="30%">Enable VLAN: </th>
+		<td width="70%"><input type="checkbox" name="vlan" size="2" maxlength="2" value="ON" onclick="vlanClicked()"></td>
+	</tr>
+	<tr>
+		<th>VLAN ID:</th>
+		<td><input type="text" name="vid" size="10" maxlength="15"></td>
+	</tr>
+	<tr>
+		<th>802.1p_Mark  </th>
+		<td><select style="WIDTH: 60px" name="vprio">
+			<option value="0">   </option>
+			<option value="1"> 0 </option>
+			<option value="2"> 1 </option>
+			<option value="3"> 2 </option>
+			<option value="4"> 3 </option>
+			<option value="5"> 4 </option>
+			<option value="6"> 5 </option>
+			<option value="7"> 6 </option>
+			<option value="8"> 7 </option>
+			</select>
+		</td>
+	</tr>
+	<tr id="multicast_vid_tr" style="">
+		<th>Multicast Vlan ID: [1-4095]</th>
+		<td><input type="text" id="multicast_vid" name="multicast_vid" size="10" maxlength="15"></td>
+	</tr>
+	<tr>
+		<th> Channel Mode:</th><td><select size="1" name="adslConnectionMode" onchange="adslConnectionModeSelection(false)">
+	  <option selected="" value="0">Bridged</option>
+	  <option value="1">IPoE</option>
+	  <option value="2">PPPoE</option>
+</select></td>
+
+	</tr>
+	<tr>
+		
+	</tr>
+
+	<tr id="br_row"><th>Enable Bridge: <input type="checkbox" name="br" size="2" maxlength="2" value="ON" onclick="brClicked()"></th></tr><tr><th>
+ Bridge Mode:</th>
+<td><select size="1" name="brmode" id="brmode">
+	<option value="3">Bridged Ethernet (Transparent Bridging)</option>
+	<option value="1">Bridged PPPoE(implies Bridged Ethernet)</option>
+</select></td></tr>
+	<tr>
+		<th>Enable NAPT: </th><td><input type="checkbox" name="naptEnabled" maxlength="2" value="ON" onclick="naptClicked()"></td>
+	</tr>
+	<tr>
+		<th>Admin Status:</th>
+		<td><input type="radio" value="1" name="chEnable">Enable
+			<input type="radio" value="0" name="chEnable" checked="">Disable
+		</td>
+	</tr>
+	<tr id="connectionType" style="">
+		<th>Connection Type:</th>
+		<td><select size="1" name="ctype" onchange="wan_service_change()">
+				<option value="4">Other</option>
+				<option value="1">TR069</option>
+				<option selected="" value="2">INTERNET</option>
+				<option value="3">INTERNET_TR069</option>
+				<option value="8">VOICE</option>
+				<option value="9">VOICE_TR069</option>
+				<option value="10">VOICE_INTERNET</option>
+				<option value="11">VOICE_INTERNET_TR069</option>
+			</select>
+		</td>
+	</tr>
+
+	<tr id="connectionTypeForBridge" style="display:none">
+		<th>Connection Type:</th>
+		<td>
+			<select size="1" name="ctypeForBridge">
+				<option value="4">Other</option>
+				<option selected="" value="2">INTERNET</option>
+			</select>
+		</td>
+	</tr>
+
+
+	<tr id="tbmtu">
+		<th>MTU: [1280-2000] </th>
+		<td>
+		<input type="text" name="mtu" size="10" maxlength="15">
+		</td>
+	</tr>
+	<tr id="tbmtu_pppoe" style="display: none;">
+		<th>MTU: [1280-1492] </th>
+		<td>
+		<input type="text" name="mtu_pppoe" size="10" maxlength="15">
+		</td>
+	</tr>
+	<tr style="display:none">
+		<th>Mac Clone:</th>
+		<td><select size="1" name="macclone" onchange="wan_macclone_change()">
+				<option value="0">NONE</option>
+				<option value="1">Static Mac Clone</option>
+				<option value="2">My PC Mac</option>
+			</select>
+		</td>
+	</tr>
+
+	<tr id="tb_macclone" style="display:none">
+    	<th>Mac Clone Address:  </th>
+    	<td>
+    	<input type="text" name="maccloneaddr" size="12" maxlength="15">
+    	</td>
+  	</tr>
+	<tr id="dgwshow" style="display:none">
+		<th>Default Route:</th>
+		<td>
+			<input type="radio" value="0" name="droute">Disable
+			<input type="radio" value="1" name="droute" checked="">Enable
+		</td>
+	</tr>
+	<tr id="IGMPProxy_show" style="">
+		<th>Enable IGMP-Proxy: </th><td><input type="checkbox" name="igmpEnabled" size="2" maxlength="2" value="ON"></td>
+	</tr>
+	<tr>
+		<th>Enable MLD-Proxy: </th><td><input type="checkbox" name="mldEnabled" size="2" maxlength="2" value="ON"></td>
+	</tr>
+		<tr id="tbprotocol" style="display:none">
+		<th>IP Protocol:</th>
+		<td><select id="IpProtocolType" style="WIDTH: 130px" onchange="protocolChange(1)" name="IpProtocolType">
+			<option value="1" selected=""> IPv4</option>
+			</select>
+		</td>
+	</tr>
+
+</tbody></table>
+</div>
+
+<div id="tbl_ppp" class="column" style="display: none;">
+ <div class="column_title">
+  <div class="column_title_left"></div>
+   <p>PPP Settings:</p>
+  <div class="column_title_right"></div>
+ </div>
+<div class="data_common">
+<table>
+<tbody><tr>
+	<th>UserName:</th>
+	<td><input type="text" name="pppUserName" size="16" maxlength="63" disabled=""></td>
+</tr><tr>
+	<th>Password:</th>
+	<td><input type="password" class="inputStyle" name="pppPassword" size="10" maxlength="29" disabled="">
+	<input type="checkbox" onclick="show_password()">Show Password</td>
+</tr>
+<tr>
+	<th>Type:</th>
+	<td><select size="1" name="pppConnectType" onchange="pppTypeSelection()" disabled="">
+		<option selected="" value="0">Continuous</option>
+		<option value="1">Connect on Demand</option>
+		<option value="2">Manual</option>
+		</select>
+	</td>
+</tr><tr>
+	<th>Idle Time (sec):</th>
+	<td><input type="text" name="pppIdleTime" size="10" maxlength="10" disabled=""></td>
+</tr>
+<tr>
+	<th>Authentication Method:</th>
+	<td><select size="1" name="auth">
+		<option selected="" value="0">AUTO</option>
+		<option value="1">PAP</option>
+		<option value="2">CHAP</option>
+		<option value="3">MSCHAP</option>
+		<option value="4">MSCHAPV2</option>
+		</select>
+	</td>
+</tr>
+<tr>
+	<th>AC-Name:</th>
+	<td><input type="text" name="acName" size="16" maxlength="30"></td>
+</tr><tr>
+	<th>Service-Name:</th>
+	<td><input type="password" name="serviceName" size="10" maxlength="30"></td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div id="tbl_ip" class="column" style="display: block;">
+ <div class="column_title">
+  <div class="column_title_left"></div>
+   <p>WAN IP Settings:</p>
+  <div class="column_title_right"></div>
+ </div>
+<div class="data_common">
+<table>
+<tbody><tr>
+
+	<th>Type:</th>
+	<td>
+	<input type="radio" value="0" name="ipMode" checked="" onclick="ipTypeSelection(0)">Fixed IP
+	
+	<input type="radio" value="1" name="ipMode" onclick="ipTypeSelection(0)">DHCP</td>
+</tr>
+<tr>
+	<th>Local IP Address:</th>
+	<td><input type="text" name="ip" size="10" maxlength="15"></td>
+</tr><tr>
+	<th>Gateway:</th>
+	<td><input type="text" name="remoteIp" size="10" maxlength="15"></td>
+</tr><tr>
+	<th>Subnet Mask:</th>
+	<td><input type="text" name="netmask" size="10" maxlength="15"></td>
+</tr><tr>
+	<th>IP Unnumbered: </th>
+	<td><input type="checkbox" name="ipUnnum" size="2" maxlength="2" value="ON" onclick="ipModeSelection()" disabled=""></td>
+</tr>
+<tr>
+<th> Request DNS:</th>
+	<td><input type="radio" value="1" name="dnsMode" onclick="dnsModeClicked()" disabled=""> Enable 
+		<input type="radio" value="0" name="dnsMode" checked="" onclick="dnsModeClicked()" disabled=""> Disable 
+	</td>
+</tr>
+<tr>
+     <th> Primary DNS Server:</th>
+     <td><input type="text" name="dns1" size="18" maxlength="15" value=""></td>
+</tr>
+<tr>
+     <th> Secondary DNS Server :</th>
+     <td><input type="text" name="dns2" size="18" maxlength="15" value=""></td>
+</tr>
+</tbody></table>
+</div>
+</div><div id="tbl_dhcp_opt" class="column" style="display: none;">
+ <div class="column_title">
+  <div class="column_title_left"></div>
+   <p>DHCP Option Settings:</p>
+  <div class="column_title_right"></div>
+ </div>
+<div class="data_common">
+<table>
+<tbody><tr><th>Enable DHCP Option 60:</th>
+<td><input type="checkbox" name="enable_opt_60" value="1"></td>
+</tr>
+<tr>
+	<th>Vendor ID:</th>
+	<td><input type="text" name="opt60_val" maxlength="32"></td>
+</tr>
+<tr><th>Enable DHCP Option 61:</th>
+<td><input type="checkbox" name="enable_opt_61" value="1"></td>
+</tr>
+<tr>
+	<th>IAID:</th>
+	<td><input type="text" name="iaid" maxlength="32"></td>
+</tr>
+<tr>
+	<th>DUID:</th>
+	<td><input type="radio" value="1" name="duid_type" onclick="showDuidType2(0)">Link-Layer address plus time</td>
+</tr>
+<tr><th>Enterprise Number and Identifier</th><td><input type="radio" value="2" name="duid_type" onclick="showDuidType2(1)"></td></tr>
+<tr id="duid_t2_ent"><th>Enterprise Number:</th><td><input type="text" name="duid_ent_num"></td></tr>
+<tr id="duid_t2_id"><th>Identifier:</th><td><input type="text" name="duid_id"></td></tr>
+<tr><th>Link-Layer address</th><td><input type="radio" value="3" name="duid_type" onclick="showDuidType2(0)"></td></tr>
+<tr><th>Enable DHCP Option 125:</th>
+<td><input type="checkbox" name="enable_opt_125" value="1"></td>
+</tr>
+<tr>
+	<th>Manufacturer OUI:</th>
+	<td><input type="text" name="manufacturer" maxlength="32"></td>
+</tr>
+<tr>
+	<th>Product Class:</th>
+	<td><input type="text" name="product_class" maxlength="32"></td>
+</tr>
+<tr>
+	<th>Model Name:</th>
+	<td><input type="text" name="model_name" maxlength="32"></td>
+</tr>
+<tr>
+	<th>Serial Number:</th>
+	<td><input type="text" name="serial_num" maxlength="32"></td>
+</tr>
+</tbody></table>
+</div></div>
+<div id="gwInfo">
+<input type="hidden" name="gwStr">
+<div id="id_dfltgwy">
+<input type="hidden" name="dstGtwy" disabled=""></div>
+<input type="hidden" name="gwStr">
+<div id="id_wanIf">
+<input type="hidden" name="wanIf" value="undefined"></div>
+</div>
+
+<div id="v6TunnelDiv" style="" class="column">
+ <div class="column_title">
+  <div class="column_title_left"></div>
+   <p>V6inV4 Tunnel settings:</p>
+  <div class="column_title_right"></div>
+ </div>
+<div class="data_common">
+<table>
+<tbody><tr>
+		<th>Tunnel Type:</th>
+		<td><select id="v6TunnelType" style="WIDTH: 130px" onchange="v6TunnelChange()" name="v6TunnelType">
+			<option value="0" id="opnoneDiv"> None</option>
+			<option value="1" id="op6rdDiv"> 6rd</option>
+			<option value="2" id="op6in4Div"> 6in4</option>
+			<option value="3" id="op6to4Div"> 6to4</option>
+			</select>
+		</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+
+<div id="6rdDiv" style="display:none" class="column">
+ <div class="column_title">
+  <div class="column_title_left"></div>
+   <p>6rd Config:</p>
+  <div class="column_title_right"></div>
+ </div>
+<div class="data_common">
+<table>
+	<tbody><tr>
+		<th> 6rd Configuration :</th>
+		<td><input type="radio" value="1" name="SixrdMode" onclick="SixrdModeClicked()" disabled=""> Auto 
+			<input type="radio" value="0" name="SixrdMode" checked="" onclick="SixrdModeClicked() " disabled=""> Manual 
+		</td>
+	</tr>
+	<tr>
+		<th>Board Router v4 Address:</th>
+		<td><input id="SixrdBRv4IP" maxlength="39" size="36" name="SixrdBRv4IP" style="width:150px "></td>
+	</tr>
+	<tr>
+		<th>6rd IPv4 Mask Len:</th>
+		<td><input id="SixrdIPv4MaskLen" maxlength="39" size="36" name="SixrdIPv4MaskLen" style="width:150px "></td>
+	</tr>
+	<tr>
+		<th>6rd Prefix (EX:"2001:db8::"):</th>
+		<td><input id="SixrdPrefix" maxlength="39" size="36" name="SixrdPrefix" style="width:150px "></td>
+	</tr>
+	<tr>
+		<th>6rd Prefix length:</th>
+		<td><input id="SixrdPrefixLen" maxlength="39" size="36" name="SixrdPrefixLen" style="width:150px "></td>
+	</tr>
+	<tr>
+		<th>Primary IPv6 DNS:</th>
+		<td><input maxlength="39" size="36" name="Ipv6Dns16rd"></td>
+	</tr>
+	<tr>
+		<th>Secondary IPv6 DNS:</th>
+		<td><input maxlength="39" size="36" name="Ipv6Dns26rd"></td>
+	</tr>
+</tbody></table>
+</div>
+</div>
+<div id="6in4Div" style="display:none" class="column">
+ <div class="column_title">
+  <div class="column_title_left"></div>
+   <p>6in4 Config:</p>
+  <div class="column_title_right"></div>
+ </div>
+<div class="data_common">
+<table>
+<tbody><tr>
+	<th>Local IPv6 Address:</th>
+	<td><input maxlength="39" size="36" name="Ipv6Addr6in4">/
+	<input maxlength="3" size="3" name="Ipv6PrefixLen6in4">
+	</td>
+</tr>
+<tr>
+	<th>Remote IPv6 Adddress:</th>
+	<td><input maxlength="39" size="36" name="Ipv6Gateway6in4"></td>
+</tr>
+<tr>
+	<th>Remote IPv4 Adddress:</th>
+	<td><input maxlength="15" size="10" name="v6TunnelRv4IP6in4"></td>
+</tr>
+<tr>
+	<th> Request DNS :</th>
+	<td>
+		<input type="radio" value="1" name="dnsV6Mode6in4" onclick="dnsModeV6Clicked6in4()">Enable
+		<input type="radio" value="0" name="dnsV6Mode6in4" checked="" onclick="dnsModeV6Clicked6in4()">Disable
+	</td>
+</tr>
+<tr>
+	<th>Primary IPv6 DNS:</th>
+	<td><input maxlength="39" size="36" name="Ipv6Dns16in4"></td>
+</tr>
+<tr>
+	<th>Secondary IPv6 DNS:</th>
+	<td><input maxlength="39" size="36" name="Ipv6Dns26in4"></td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div id="6to4Div" style="display:none" class="column">
+ <div class="column_title">
+  <div class="column_title_left"></div>
+   <p>6to4 Config:</p>
+  <div class="column_title_right"></div>
+ </div>
+<div class="data_common">
+<table>
+<tbody><tr>
+	<th>6to4 Relay:</th>
+	<td><input maxlength="15" size="10" name="v6TunnelRv4IP6to4">
+	</td>
+</tr>
+<tr>
+	<th>Primary IPv6 DNS:</th>
+	<td><input maxlength="39" size="36" name="Ipv6Dns16to4"></td>
+</tr>
+<tr>
+	<th>Secondary IPv6 DNS:</th>
+	<td><input maxlength="39" size="36" name="Ipv6Dns26to4"></td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div id="IPV6_wan_setting" style="display:none" class="column">
+<div id="tbipv6wan" style="display: none;">
+<div class="column_title">
+  <div class="column_title_left"></div>
+   <p>IPv6 WAN Setting:</p>
+  <div class="column_title_right"></div>
+ </div>
+<div class="data_common">
+<table>
+	<tbody><tr id="TrIpv6AddrType">
+		<th width="30%">Address Mode:</th>
+		<td width="70%"><select id="AddrMode" style="WIDTH: 180px" onchange="wanAddrModeChange(1)" name="AddrMode">
+			<option value="1">Stateless DHCPv6(SLAAC)</option>
+			<option value="2">Static</option>
+			<option value="16">Stateful DHCPv6</option>
+			<option value="32">Auto Detect Mode</option>
+			</select>
+		</td>
+	</tr>
+</tbody></table>
+<table id="secIPv6Div" style="display:none">
+	<tbody><tr id="TrIpv6Addr">
+		<th width="30%">IPv6 Address:</th>
+		<td width="70%"><input id="Ipv6Addr" maxlength="39" size="36" name="Ipv6Addr">
+		/
+		<input id="Ipv6PrefixLen" maxlength="3" size="3" name="Ipv6PrefixLen">
+		</td>
+	</tr>
+	<tr id="TrIpv6Gateway">
+		<th>IPv6 Gateway:</th>
+		<td><input id="Ipv6Gateway" maxlength="39" size="36" name="Ipv6Gateway"></td>
+	</tr>
+</tbody></table>
+<table id="dhcp6c_block" style="display:none">
+<tbody><tr>
+<th width="30%">Request Options:</th>
+<td width="70%">
+<input type="checkbox" value="ON" name="iana" id="send1" hidden="">
+<input type="checkbox" value="ON" name="iapd" id="send2">Request Prefix
+</td>
+</tr>
+</tbody></table>
+<table id="IPv6DnsDiv" style="display:none">
+	<tbody><tr>
+		<th width="30%"> Request DNS :</th>
+		<td width="70%">
+			<input type="radio" value="1" name="dnsV6Mode" onclick="dnsModeV6Clicked()">on
+			<input type="radio" value="0" name="dnsV6Mode" checked="" onclick="dnsModeV6Clicked()">off
+		</td>
+	</tr>
+	<tr>
+		<th>Primary IPv6 DNS:</th>
+		<td><input maxlength="39" size="36" name="Ipv6Dns1" disabled=""></td>
+	</tr>
+	<tr>
+		<th>Secondary IPv6 DNS:</th>
+		<td><input maxlength="39" size="36" name="Ipv6Dns2" disabled=""></td>
+	</tr>
+</tbody></table>
+<table id="tbnaptv6" style="display:none">
+<tbody><tr>
+<th width="30%">IPV6 Address Translate Mode:</th>
+<td width="70%">
+<select id="napt_v6" onchange="NATv6Change()" name="napt_v6">
+<option value="0">None</option>
+<option value="1">NATv6</option>
+<option value="2">NPTv6</option>
+</select>
+</td>
+</tr>
+</tbody></table>
+<table id="ndp_proxy" style="display:none">
+<tbody><tr>
+<th width="30%">Enable NDP Proxy:</th>
+<td width="70%">
+<input type="checkbox" value="ON" name="ndp_proxy">
+</td>
+</tr>
+</tbody></table>
+<div id="div4over6" style="display:none">
+<table>
+	<tbody><tr>
+		<th width="30%">4over6 Type:</th>
+		<td width="70%"><select id="s4over6Type" style="WIDTH: 80px" onchange="s4over6TypeChange()" name="s4over6Type">
+			<option value="0">None</option>
+			<option value="1">DS-Lite</option>
+			</select>
+		</td>
+	</tr>
+</tbody></table>
+</div>
+<div id="DSLiteDiv" style="display:none">
+<table>
+	<tbody><tr id="dslite_mode_div" style="display:none">
+		<th width="30%">AFTR address mode:</th>
+		<td width="70%">
+			<input type="radio" value="0" name="dslite_aftr_mode" id="send5" onclick="dsliteAftrModeChange()">DHCPv6
+			<input type="radio" value="1" name="dslite_aftr_mode" id="send6" onclick="dsliteAftrModeChange()">static
+		</td>
+	</tr>
+</tbody></table>
+<table>
+	<tbody><tr id="dslite_aftr_hostname_div" style="display:none">
+		<th width="30%">AFTR address:</th>
+		<td width="70%"><input id="dslite_aftr_hostname" maxlength="39" size="36" name="dslite_aftr_hostname">
+		</td>
+	</tr>
+</tbody></table>
+</div>
+</div>
+</div>
+</div>
+
+<div id="div_pmap" class="column">
+ <div class="column_title">
+  <div class="column_title_left"></div>
+   <p>Port Mapping:</p>
+  <div class="column_title_right"></div>
+ </div>
+<div class="data_common">
+<table id="tbl_pmap">
+<tbody><tr nowrap=""><input type="hidden" name="chkpt">
+<input type="hidden" name="chkpt">
+<input type="hidden" name="chkpt">
+<input type="hidden" name="chkpt">
+</tr><tr nowrap=""><td><input type="checkbox" name="chkpt">LAN_1 (10GE)</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+
+
+<div class="btn_ctl">
+<input type="hidden" value="/admin/multi_wan_generic.asp" name="submit-url">
+<input type="hidden" id="lst" name="lst" value="">
+<input type="hidden" name="encodePppUserName" value="">
+<input type="hidden" name="encodePppPassword" value="">
+<input type="hidden" name="qosEnabled" value="">
+<input class="link_bg" type="submit" value="Apply Changes" name="apply" onclick="return applyCheck(this)">&nbsp; &nbsp; &nbsp; &nbsp;
+<input class="link_bg" type="submit" value="Delete" name="delete" onclick="return deleteCheck(this)">
+<input type="hidden" name="itfGroup" value="0">
+<input type="hidden" name="postSecurityFlag" value="">
+</div>
+<script>
+				document.getElementById('IGMPProxy_show').style.display = '';
+
+
+
+
+</script>
+<input type="hidden" name="csrftoken" value="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">
+</form>
+
+
+
+</body></html>

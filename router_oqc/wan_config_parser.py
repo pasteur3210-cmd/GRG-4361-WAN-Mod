@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 
 @dataclass
 class WanConfig:
-    index:int; name:str; applicationtype:int; cmode:int; brmode:int; napt:int; vlan:int; vid:int; vprio:int; mVid:int; enable:int; mtu:int; mtu_pppoe:int; IpProtocol:int
+    index:int; name:str; applicationtype:int; cmode:int; brmode:int; napt:int; vlan:int; vid:int; vprio:int; mVid:int; enable:int; mtu:int; mtu_pppoe:int; IpProtocol:int; ipDhcp:int=1; ipAddr:str=""; remoteIpAddr:str=""; netMask:str=""; dnsMode:int=1; v6TunnelType:int=0; itfGroup:int=0
     def to_dict(self): return asdict(self)
     @property
     def channel_mode(self): return {0:'Bridged',1:'IPoE',2:'PPPoE'}.get(self.cmode,str(self.cmode))
@@ -38,7 +38,7 @@ def parse_wan_config_page(html:str)->tuple[list[WanConfig],str]:
         if end<0: break
         block=html[name_end:end+len(end_marker)]
         idx=len(configs)
-        configs.append(WanConfig(idx,name,int(_ival(block,'applicationtype')),int(_ival(block,'cmode')),int(_ival(block,'brmode')),int(_ival(block,'napt')),int(_ival(block,'vlan')),int(_ival(block,'vid')),int(_ival(block,'vprio')),int(_ival(block,'mVid')),int(_ival(block,'enable')),int(_ival(block,'mtu')),int(_ival(block,'mtu_pppoe')),int(_ival(block,'IpProtocol'))))
+        configs.append(WanConfig(idx,name,int(_ival(block,'applicationtype')),int(_ival(block,'cmode')),int(_ival(block,'brmode')),int(_ival(block,'napt')),int(_ival(block,'vlan')),int(_ival(block,'vid')),int(_ival(block,'vprio')),int(_ival(block,'mVid')),int(_ival(block,'enable')),int(_ival(block,'mtu')),int(_ival(block,'mtu_pppoe')),int(_ival(block,'IpProtocol')),int(_ival(block,'ipDhcp',1)),str(_ival(block,'ipAddr','')),str(_ival(block,'remoteIpAddr','')),str(_ival(block,'netMask','')),int(_ival(block,'dnsMode',1)),int(_ival(block,'v6TunnelType',0)),int(_ival(block,'itfGroup',0))))
         cursor=end+len(end_marker)
     if not configs: raise ValueError('找不到 WAN links[] 設定資料')
     if not token: raise ValueError('找不到 WAN 頁面 csrftoken')
