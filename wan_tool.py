@@ -60,6 +60,20 @@ def find_live_static_values(html):
     return out
 
 
+def comparison_summary(comparison):
+    counts = {key: sum(item['status'] == key for item in comparison.values())
+              for key in ('MATCH', 'DIFF', 'UNKNOWN')}
+    if counts['DIFF']:
+        result = 'NG'
+    elif counts['UNKNOWN']:
+        result = 'VERIFY_INCOMPLETE'
+    elif comparison:
+        result = 'OK'
+    else:
+        result = 'VERIFY_INCOMPLETE'
+    return result, counts
+
+
 def extended_comparison(html, target, basic):
     """Conservative observation. Unknown fields MUST NOT be marked MATCH.
 
@@ -183,7 +197,9 @@ class WanSession:
         # Never log active CSRF tokens or credentials.
         (self.output_dir/'before.json').write_text(json.dumps(self.snapshot_before,indent=2,ensure_ascii=False),encoding='utf-8')
         self.comparison=extended_comparison(html,TARGET,compare_basic(wan,TARGET))
-        write_record(self.output_dir,self.host,'READ','OK','Read-only snapshot',self.snapshot_before)
+        read_result, counts = comparison_summary(self.comparison)
+        write_record(self.output_dir,self.host,'READ',read_result,
+                     'Read/Compare: '+str(counts),self.snapshot_before)
         (self.output_dir/'read_comparison.json').write_text(json.dumps(self.comparison,indent=2,ensure_ascii=False),encoding='utf-8')
         return self.comparison
 
@@ -223,3 +239,23 @@ class WanSession:
         except Exception as exc:
             write_record(self.output_dir,self.host,'APPLY','FAIL',f'{type(exc).__name__}: {exc}',self.snapshot_before)
             raise
+
+
+def save_manual_review(folder, host, comparison, confirmed, operator, notes):
+    """Separate human inspection from automatic validation. Never turn UNKNOWN into auto MATCH."""
+    if not isinstance(confirmed,bool):
+        raise ValueError('Explicit human review decision required')
+    if not operator.strip():
+        raise ValueError('Operator is required')
+    folder=Path(folder);folder.mkdir(parents=True,exist_ok=True)
+    automatic, counts = comparison_summary(comparison)
+    outcome='MANUAL_OK' if confirmed and counts['DIFF']==0 else 'MANUAL_NG'
+    record={'timestamp':datetime.now().isoformat(timespec='seconds'),
+            'host':host,'operator':operator.strip(),'manual_result':outcome,
+            'automatic_result':automatic,'counts':counts,'notes':notes.strip(),
+            'scope':'Web GUI human confirmation only; automatic UNKNOWN remains UNKNOWN'}
+    with (folder/'manual_reviews.jsonl').open('a',encoding='utf-8') as f:
+        f.write(json.dumps(record,ensure_ascii=False)+'\n')
+    write_record(folder,host,'MANUAL_REVIEW',outcome,
+                 'Operator='+operator.strip()+'; Auto='+automatic+'; '+notes.strip())
+    return record

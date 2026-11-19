@@ -1,20 +1,16 @@
-# GRG-4361u WAN Setting Tool V1.0.3 (Pilot)
+# GRG-4361u WAN Setting Tool V1.0.4 — Pilot
 
-## Purpose
-Configure ONLY `nas0_0` to VLAN 160 / 802.1p 0 / IPoE / INTERNET / transparent bridge enabled / Fixed IP `192.168.2.121` / gateway `192.168.2.100` / mask `255.255.255.0` / **Multicast VLAN ID 160** / LAN_1 (10GE) enabled.
+## Usage
+1. Upload Clean GitHub ZIP contents to your WAN-tool repository, build via GitHub Actions.
+2. Read & Compare; GUI shows overall result and MATCH/DIFF/UNKNOWN counts.
+3. On recoverable TEST DUT ONLY, explicitly confirm Experimental Apply & Verify.
+4. Refresh DUT Web GUI nas0_0. Inspect VLAN 160, Multicast VLAN 160, INTERNET/IPoE, Bridge, Fixed IP 192.168.2.121, Gateway 192.168.2.100, Mask 255.255.255.0, DNS, and 10GE Port Mapping.
+5. Press Manual Web GUI Review, record reviewer/decision/notes. Manual review is separate from automatic result.
 
-## Using the build
-1. Upload the Clean GitHub Upload package **contents** to a separate GitHub repository.
-2. GitHub Actions workflow `GRG4361 WAN Windows Build` compiles Windows EXE with Python 3.11.
-3. Run Read & Compare before any write.
-4. Experimental Apply & Verify requires confirmation. Use only a recovery-ready lab DUT.
-5. Verify settings by reopening the actual device Web GUI after writing.
+**Result meaning**: OK: all automatically readable fields match and no UNKNOWN; NG: a definitive mismatch or apply error; VERIFY_INCOMPLETE: at least one field could not be reliably read back. MANUAL_OK is not an automatic PASS.
 
-## Known limitations
-- `multicast_vid` field is hidden by default in some GUI states. Submission of `160` has NOT yet been proven to persist on the device.
-- Readback parser cannot verify Multicast VLAN, Static IP, bridge checkbox, or port mapping. Status remains UNKNOWN and whole-operation VERIFY_INCOMPLETE rather than PASS.
-- There is no tested automatic rollback. Device-side persistence after reboot is unverified.
-- No factory/production deployment until device-side verification.
+## Safety
+WAN writing modifies live device settings. No verified rollback. Do not deploy to production until automatic complete readback and firmware compatibility validated. Credentials and tokens must not be put into logs.
 
-## Security
-Do not share live CSRF tokens or credentials. Program obtains a fresh token for each write.
+## Output
+`records/WAN_Master_Record.xlsx`, `WAN_Master_Record.csv`, `before.json`, `after.json`, `read_comparison.json`, `after_comparison.json`, `manual_reviews.jsonl`, `execution.log`.
