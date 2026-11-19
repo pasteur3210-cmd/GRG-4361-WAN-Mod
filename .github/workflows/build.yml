@@ -1,0 +1,26 @@
+name: GRG4361 WAN Windows Build
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: x64
+      - name: Install
+        run: python -m pip install -r requirements.txt
+      - name: Validate
+        run: |
+          python -m compileall -q main.py wan_tool.py router_oqc tests
+          python -m pytest -q
+      - name: Build EXE
+        run: pyinstaller --noconfirm --clean GRG4361_WAN.spec
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GRG4361_WAN_Setting_V1.0.1
+          path: dist/*.exe
