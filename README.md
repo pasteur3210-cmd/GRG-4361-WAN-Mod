@@ -1,26 +1,25 @@
-# GRG-4361u WAN Setting Tool V1.0.8 (Pilot)
+# GRG-4361u WAN Setting Tool V1.1.2
 
-## Main changes
-- A single cumulative `records/GRG4361_WAN_Master_Record.xlsx` alongside the executable.
-- Three worksheets: WAN Setting Master Record, IP Allocation, Test History.
-- CSV files are **not generated** by normal V1.0.8 operation.
-- Engineering / Production modes; the same MAC + IP may be retested, different MAC + IP is rejected even in Engineering mode.
-- Production mode also rejects moving an already-allocated MAC to a different IP.
-- Optional one-time legacy CSV import; no mandatory import in Engineering mode.
-- OK/Cancel Apply confirmation; before applying show READY_TO_APPLY, not NG.
-- Continue preserving known-good V1.0.6 WAN POST/19-field readback and selective nas0_2 → nas0_0 10GE transfer.
+Production-oriented release candidate based on verified V1.0.9 WAN post/readback.
 
-## Usage
-1. Build with GitHub Actions on Python 3.11 / Windows runner.
-2. Extract/run EXE from a **writable folder** (not Program Files or a protected network directory).
-3. `records/GRG4361_WAN_Master_Record.xlsx` appears automatically. Do not keep it open in Excel when writing.
-4. If previous production IP records exist, import `WAN_IP_Allocation.csv` before allocating any new production devices. Import separately for each old records folder.
-5. Engineering: repeat the same two DUT identities and IPs with new history rows. Production: assign 192.168.2.121-130 uniquely.
-6. Read & Compare, then Apply (test DUT only), then inspect overall result and Excel.
+## Operating procedure
 
-## Storage and migration safeguards
-- The workbook is the persistent source of truth **for this folder**. Switching EXE folder makes a new ledger; move/copy the entire `records` folder when replacing a build, or choose a fixed EXE location.
-- A new workbook cannot detect previous allocations on other computers. For Production, import audited legacy records, or run from a shared controlled workspace with serialized operation.
-- The original V1.0.7 AppData ledger is not deleted or silently migrated. Backup it and import its CSV if necessary.
-- Legacy CSVs may still be created by *legacy unit tests* in temporary test directories; the V1.0.8 GUI does not create CSV reports.
-- Current release is Pilot; Windows GitHub Actions and DUT validation are pending.
+1. Compile on GitHub Actions Windows runner (Python 3.11). Keep the existing `records` folder beside the EXE.
+2. Launch the tool; use **Change Operator** once before scanning devices. Operator stays locked for scanner operation.
+3. Scan MAC then GPON SN. Scanner Enter moves MAC -> GPON; Enter in GPON does not move to Operator or trigger Apply.
+4. Select target WAN IP from 192.168.2.121–130; perform Read & Compare, then confirm Apply only for intended DUT.
+5. Confirm 19/19 target matches, all cross-WAN changes permitted and Excel results appended under `records/GRG4361_WAN_Master_Record.xlsx`.
+6. After a successful Apply, only MAC and GPON SN clear and focus returns to MAC. Operator and connection credentials stay unchanged.
+
+## Release limitations
+
+GUI scanner sequence and packaging verified by automated tests on available platform; actual Windows EXE build and V1.1.2 multi-device operating validation must be confirmed on target Windows environment. Do not claim operational qualification until verified. Production use requires reviewing IP assignments for all production test PCs; per-folder records alone are not a distributed IP allocator.
+
+
+## V1.1.2 Restore Default Verification
+- Restore Default is **manual**; this tool only reads WAN settings.
+- First restore and independently check a reference DUT, then use `Capture Factory Golden (once)` to store its three WAN configurations under `records/GRG4361_Factory_Default_Golden.json` with SHA256. Review the Golden before production use. Never capture an unverified DUT or a modified test state.
+- For each DUT, manually Restore Default and allow reboot. Scan MAC and GPON SN, press `4. Verify Default Settings`. The comparison is read-only and checks every captured field on nas0_0, nas0_1, nas0_2. Missing values are UNKNOWN, differing values FAIL, matching values PASS.
+- Summary, per-field differences and Test History are appended to the same Excel workbook (`records/GRG4361_WAN_Master_Record.xlsx`), on two additional tabs. Three-sheet V1.1.0 records are upgraded without deleting existing rows.
+- No official default values have been independently provided; Golden capture requires operator confirmation and is not a factory-signed reference. Production approval requires actual restored reference verification.
+- WARNING: open Excel workbooks may prevent concurrent writes; close Excel before running a test.

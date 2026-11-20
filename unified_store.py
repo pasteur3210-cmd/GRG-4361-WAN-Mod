@@ -58,7 +58,10 @@ def _write(path,data):
     match=re.fullmatch(r'xl/worksheets/sheet([1-5])\.xml',item.filename)
     content=_sheet_xml(data[int(match.group(1))-1]) if match else source.read(item.filename)
     dest.writestr(item.filename,content)
-  os.replace(tmp,path)
+  try:
+   os.replace(tmp,path)
+  except PermissionError as exc:
+   raise PermissionError(f'Cannot update {path}. Close the Excel workbook and retry.') from exc
  finally:
   if os.path.exists(tmp):os.unlink(tmp)
 
@@ -119,9 +122,13 @@ def ensure_workbook(folder):
   path=workbook_path(folder)
   if not path.exists():_write(path,[[list(h)] for h in HEADERS])
   else:
-   existing=_read(path)
+   # Windows prohibits replacing an XLSX that still has an open ZipFile handle.
+   # Read and close the archive completely BEFORE writing the upgraded workbook.
    with zipfile.ZipFile(path) as z:
-    if f'xl/worksheets/sheet{len(SHEETS)}.xml' not in z.namelist():_write(path,existing)
+    needs_upgrade = f'xl/worksheets/sheet{len(SHEETS)}.xml' not in z.namelist()
+   if needs_upgrade:
+    existing=_read(path)
+    _write(path,existing)
  return workbook_path(folder)
 
 def ip_state(folder):

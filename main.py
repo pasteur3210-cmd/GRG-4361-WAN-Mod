@@ -7,10 +7,10 @@ from wan_tool import WanSession, comparison_summary, save_manual_review, check_i
 from default_verify import snapshot, save_baseline, verify, baseline_path
 from unified_store import ensure_workbook, read_rows, ip_state, import_legacy_csv, workbook_path, ACTIVE
 
-VERSION = 'V1.1.1'
+VERSION = 'V1.1.2'
 DATA_DIR = (Path(sys.executable).resolve().parent if getattr(sys,'frozen',False) else Path(__file__).resolve().parent) / 'records'
 ensure_workbook(DATA_DIR)
-root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.1.1');root.geometry('1160x830')
+root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.1.2');root.geometry('1160x830')
 frm=ttk.Frame(root,padding=14);frm.pack(fill='both',expand=True)
 entries=[]
 for i,(name,default,show) in enumerate([('DUT IP','192.168.1.1',None),('Username','root',None),('Password','', '*')]):

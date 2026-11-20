@@ -9,7 +9,7 @@ from wan_tool import config_values
 from unified_store import add_default_verification
 
 BASELINE='GRG4361_Factory_Default_Golden.json'
-VERSION='V1.1.1'
+VERSION='V1.1.2'
 
 def snapshot(host,username,password):
     client=RouterClient(host.strip(),protocol='http',timeout=12)
