@@ -232,7 +232,7 @@ class WanSession:
         self.operator=operator.strip();self.lease_id=None
 
     def record(self,stage,result,details,before=None,after=None):
-        add_history(self.output_dir,'V1.0.8',self.mode,self.host,stage,result,self.mac,self.gpon_sn,self.target['ip'],self.operator,details,json.dumps(before or {},ensure_ascii=False),json.dumps(after or {},ensure_ascii=False))
+        add_history(self.output_dir,'V1.0.9',self.mode,self.host,stage,result,self.mac,self.gpon_sn,self.target['ip'],self.operator,details,json.dumps(before or {},ensure_ascii=False),json.dumps(after or {},ensure_ascii=False))
         with (self.output_dir/'execution.log').open('a',encoding='utf-8') as f:f.write(f'{datetime.now().isoformat()} {stage} {result} {details}\n')
 
     def close(self):self.client.close()
@@ -248,7 +248,7 @@ class WanSession:
         (self.output_dir/'before.json').write_text(json.dumps(self.snapshot_before,indent=2,ensure_ascii=False),encoding='utf-8')
         self.comparison=extended_comparison(html,self.target,compare_basic(wan,self.target))
         read_result, counts = comparison_summary(self.comparison)
-        self.record('READ',read_result,'Read/Compare: '+str(counts),self.snapshot_before)
+        self.record('READ',('READY_TO_APPLY' if read_result == 'NG' else 'ALREADY_CONFIGURED' if read_result == 'OK' else read_result),'Read/Compare: '+str(counts),self.snapshot_before)
         (self.output_dir/'read_comparison.json').write_text(json.dumps(self.comparison,indent=2,ensure_ascii=False),encoding='utf-8')
         return self.comparison
 
@@ -318,7 +318,7 @@ def save_manual_review(folder, host, comparison, confirmed, operator, notes,mac=
             'scope':'Web GUI human confirmation only; automatic UNKNOWN remains UNKNOWN'}
     with (folder/'manual_reviews.jsonl').open('a',encoding='utf-8') as f:
         f.write(json.dumps(record,ensure_ascii=False)+'\n')
-    add_history(folder,'V1.0.8',mode,host,'MANUAL_REVIEW',outcome,mac,gpon,ip,operator.strip(),'Auto='+automatic+'; '+notes.strip())
+    add_history(folder,'V1.0.9',mode,host,'MANUAL_REVIEW',outcome,mac,gpon,ip,operator.strip(),'Auto='+automatic+'; '+notes.strip())
     return record
 
 

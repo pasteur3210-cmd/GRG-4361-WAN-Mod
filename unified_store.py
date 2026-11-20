@@ -151,7 +151,8 @@ def add_history(folder,version,mode,router,stage,result,mac,gpon,ip,operator,not
  timestamp=datetime.now().isoformat(timespec='seconds')
  with locked(folder):
   path=workbook_path(folder);data=_read(path)
-  data[0].append([timestamp,version,mode,router,stage,result,mac,gpon,ip,operator,notes,before,after])
+  if stage == 'APPLY':
+   data[0].append([timestamp,version,mode,router,stage,result,mac,gpon,ip,operator,notes,before,after])
   data[2].append([timestamp,version,mode,router,stage,result,mac,gpon,ip,operator,notes])
   _write(path,data)
 
