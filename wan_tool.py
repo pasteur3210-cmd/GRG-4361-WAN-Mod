@@ -9,6 +9,7 @@ import csv, json, ipaddress, re, time, os, uuid, contextlib, shutil
 from router_oqc.client import RouterClient, RouterError
 from router_oqc.wan_config_client import read_wan, BRIDGE_FIELDS
 from router_oqc.post_security import post_security_flag
+from unified_store import add_history, reserve as xlsx_reserve, add_allocation as xlsx_allocation
 
 TARGET = {'interface':'nas0_0','vlan':1,'vid':160,'vprio':1,'cmode':1,
           'br':1,'brmode':3,'napt':0,'enable':1,'ctype':2,'mtu':1500,
@@ -221,13 +222,18 @@ def write_record(folder,router,stage,result,details,before=None,after=None):
 
 
 class WanSession:
-    def __init__(self,host,username,password,output_dir='records',target_ip='192.168.2.121',mac='',gpon_sn='',operator=''):
+    def __init__(self,host,username,password,output_dir='records',target_ip='192.168.2.121',mac='',gpon_sn='',operator='',mode='Engineering'):
+        self.mode=mode
         self.host=host.strip();self.client=RouterClient(self.host,protocol='http',timeout=12)
         self.username=username;self.password=password;self.output_dir=Path(output_dir)
         self.before=None;self.token=None;self.html=None;self.before_wan=None
         self.target=dict(TARGET); self.target['ip']=target_ip
         self.mac=normalize_mac(mac) if mac else '';self.gpon_sn=re.sub(r'[^0-9A-Za-z]','',gpon_sn).upper() if gpon_sn else ''
         self.operator=operator.strip();self.lease_id=None
+
+    def record(self,stage,result,details,before=None,after=None):
+        add_history(self.output_dir,'V1.0.8',self.mode,self.host,stage,result,self.mac,self.gpon_sn,self.target['ip'],self.operator,details,json.dumps(before or {},ensure_ascii=False),json.dumps(after or {},ensure_ascii=False))
+        with (self.output_dir/'execution.log').open('a',encoding='utf-8') as f:f.write(f'{datetime.now().isoformat()} {stage} {result} {details}\n')
 
     def close(self):self.client.close()
 
@@ -242,8 +248,7 @@ class WanSession:
         (self.output_dir/'before.json').write_text(json.dumps(self.snapshot_before,indent=2,ensure_ascii=False),encoding='utf-8')
         self.comparison=extended_comparison(html,self.target,compare_basic(wan,self.target))
         read_result, counts = comparison_summary(self.comparison)
-        write_record(self.output_dir,self.host,'READ',read_result,
-                     'Read/Compare: '+str(counts),self.snapshot_before)
+        self.record('READ',read_result,'Read/Compare: '+str(counts),self.snapshot_before)
         (self.output_dir/'read_comparison.json').write_text(json.dumps(self.comparison,indent=2,ensure_ascii=False),encoding='utf-8')
         return self.comparison
 
@@ -256,7 +261,7 @@ class WanSession:
         if {c.name:config_values(c) for c in configs}!=self.snapshot_before:
             raise ValueError('WAN settings changed since snapshot. Read again.')
         fields=build_payload(self.target,token,html)  # fails closed until checksum is verified
-        reserve_ip(self.output_dir,self.mac,self.gpon_sn,self.target['ip'],self.host,self.operator)
+        xlsx_reserve(self.output_dir,self.mode,self.operator,self.mac,self.gpon_sn,self.target['ip'],self.host)
         # Important: requests accepts a tuple list; its fallback raw transport uses urlencode too.
         # Store only redacted payload to aid verification without secrets.
         sanitized=[(k,'[REDACTED]' if k in ('csrftoken','postSecurityFlag') else v) for k,v in fields]
@@ -287,18 +292,18 @@ class WanSession:
                 missing='All 19 target settings verified'
             if transfer:
                 missing += '; Allowed Port Mapping Transfer: ' + transfer
-            write_record(self.output_dir,self.host,'APPLY',result,missing,self.snapshot_before,after)
+            self.record('APPLY',result,missing,self.snapshot_before,after)
             (self.output_dir/'after.json').write_text(json.dumps(after,indent=2),encoding='utf-8')
             (self.output_dir/'after_comparison.json').write_text(json.dumps(basic,indent=2,ensure_ascii=False),encoding='utf-8')
-            ledger_event(self.output_dir,'APPLY',('HOLD' if result=='FAIL' else result),self.operator,self.mac,self.gpon_sn,self.target['ip'],self.host,missing)
+            xlsx_allocation(self.output_dir,self.mode,'APPLY',('HOLD' if result=='FAIL' else result),self.operator,self.mac,self.gpon_sn,self.target['ip'],self.host,missing)
             return result,missing,basic
         except Exception as exc:
-            write_record(self.output_dir,self.host,'APPLY','FAIL',f'{type(exc).__name__}: {exc}',self.snapshot_before)
-            ledger_event(self.output_dir,'APPLY','HOLD',self.operator,self.mac,self.gpon_sn,self.target['ip'],self.host,'UNCERTAIN WRITE / manual review required: '+str(exc))
+            self.record('APPLY','FAIL',f'{type(exc).__name__}: {exc}',self.snapshot_before)
+            xlsx_allocation(self.output_dir,self.mode,'APPLY','HOLD',self.operator,self.mac,self.gpon_sn,self.target['ip'],self.host,'UNCERTAIN WRITE / manual review required: '+str(exc))
             raise
 
 
-def save_manual_review(folder, host, comparison, confirmed, operator, notes):
+def save_manual_review(folder, host, comparison, confirmed, operator, notes,mac='',gpon='',ip='',mode='Engineering'):
     """Separate human inspection from automatic validation. Never turn UNKNOWN into auto MATCH."""
     if not isinstance(confirmed,bool):
         raise ValueError('Explicit human review decision required')
@@ -313,8 +318,7 @@ def save_manual_review(folder, host, comparison, confirmed, operator, notes):
             'scope':'Web GUI human confirmation only; automatic UNKNOWN remains UNKNOWN'}
     with (folder/'manual_reviews.jsonl').open('a',encoding='utf-8') as f:
         f.write(json.dumps(record,ensure_ascii=False)+'\n')
-    write_record(folder,host,'MANUAL_REVIEW',outcome,
-                 'Operator='+operator.strip()+'; Auto='+automatic+'; '+notes.strip())
+    add_history(folder,'V1.0.8',mode,host,'MANUAL_REVIEW',outcome,mac,gpon,ip,operator.strip(),'Auto='+automatic+'; '+notes.strip())
     return record
 
 

@@ -1,41 +1,26 @@
-# GRG-4361u WAN Setting Tool V1.0.7 — 10-unit Pilot
+# GRG-4361u WAN Setting Tool V1.0.8 (Pilot)
 
-Windows 11 / Edge, compile using GitHub Actions on Python 3.11. Pilot: only use on recoverable test DUTs until station acceptance is signed.
+## Main changes
+- A single cumulative `records/GRG4361_WAN_Master_Record.xlsx` alongside the executable.
+- Three worksheets: WAN Setting Master Record, IP Allocation, Test History.
+- CSV files are **not generated** by normal V1.0.8 operation.
+- Engineering / Production modes; the same MAC + IP may be retested, different MAC + IP is rejected even in Engineering mode.
+- Production mode also rejects moving an already-allocated MAC to a different IP.
+- Optional one-time legacy CSV import; no mandatory import in Engineering mode.
+- OK/Cancel Apply confirmation; before applying show READY_TO_APPLY, not NG.
+- Continue preserving known-good V1.0.6 WAN POST/19-field readback and selective nas0_2 → nas0_0 10GE transfer.
 
-## WAN target
-nas0_0, VLAN ID=160, multicast VLAN ID=160, priority 0 (HTTP value 1), INTERNET/IPoE, bridge enabled / transparent, NAPT disabled, MTU 1500, fixed IPv4 192.168.2.121–192.168.2.130 (operator-selected), gateway 192.168.2.100, subnet 255.255.255.0, request DNS disabled, LAN_1 10GE mapping enabled.
+## Usage
+1. Build with GitHub Actions on Python 3.11 / Windows runner.
+2. Extract/run EXE from a **writable folder** (not Program Files or a protected network directory).
+3. `records/GRG4361_WAN_Master_Record.xlsx` appears automatically. Do not keep it open in Excel when writing.
+4. If previous production IP records exist, import `WAN_IP_Allocation.csv` before allocating any new production devices. Import separately for each old records folder.
+5. Engineering: repeat the same two DUT identities and IPs with new history rows. Production: assign 192.168.2.121-130 uniquely.
+6. Read & Compare, then Apply (test DUT only), then inspect overall result and Excel.
 
-## Per-device workflow (repeat up to 10 times)
-1. Attach ONE DUT via LAN (default DUT management IP 192.168.1.1). Restore DUT to expected baseline if necessary. Select free target static IP from the dropdown.
-2. Scan MAC and GPON SN labels (or type them). GPON SN must equal `CMTD` + final eight hex digits of scanned MAC. Enter operator.
-3. Click `Read & Compare`; 19 fields are compared against the selected target IP using the DUT `links[]` values extracted from `/admin/multi_wan_generic.asp`. This does **not** prove the scanned label belongs to the connected DUT: independently verify label/device mapping.
-4. On a test DUT, click `EXPERIMENTAL Apply & Verify` and confirm. This reserves selected IP in a durable CSV ledger **before** submitting a POST. A reserved or confirmed IP for another MAC is rejected.
-5. A successful readback of 19/19 settings produces `OK`; a mismatch produces NG; missing data produces `VERIFY_INCOMPLETE`. Compare actual Web GUI after pilot test. After OK the UI clears identifiers and selects the next free IP.
-6. The allocation CSV/XLSX and cumulative Master Record are stored at `%LOCALAPPDATA%\GRG4361_WAN_Setting\records` on Windows, independent of EXE location. On first use, import earlier `records/WAN_IP_Allocation.csv` using the GUI import button. If previous devices were configured, DO NOT initialize an empty ledger.
-
-## Excel / history
-`WAN_IP_Allocation.xlsx` has timestamp, event, result, operator, MAC, GPON SN, target IP, DUT management IP, and notes. `WAN_IP_Allocation.csv` is the transaction authority; each reservation and attempt appends a row. `WAN_Master_Record.xlsx` retains detailed before/after comparison. Do **not** delete either CSV when switching devices. To share allocations among multiple PCs, use a **single shared record database**; this pilot only protects IPs within the same records folder and cannot detect independent workstations or other non-tool assignments.
-
-`RESERVED` and `HOLD` also block allocation; a write with uncertain result is HOLD, not automatically released. Reassignment must be reviewed manually using both DUT Web GUI and records. Do not edit the CSV while the application runs. If the ledger XLSX is open in Excel and cannot be updated, close Excel and resume the tool; CSV continues to be authoritative.
-
-## Engineering safety
-- Same target IP in different DUTs is blocked **only** when the same persistent persistent data folder is used; DUT identity comes from **operator scans**, not authenticated device-read identifiers. MAC/GPON format relationship is checked, but actual DUT ownership is not yet read and cross-verified.
-- WAN configuration can interrupt TR069/internet. No verified rollback. No mass unattended writes. Never run simultaneously on two PCs against distinct copies of allocation CSV.
-- The readback confirms configured values represented by device Web GUI initialization data, not actual end-to-end IP/optical connectivity or persistent storage across a power cycle.
-- LAN management 192.168.1.1 is distinct from static WAN IP range 192.168.2.121–130.
-
-## Build
-Upload only Clean ZIP contents to a new GitHub repository root; Actions > GRG4361 WAN Windows Build > Run workflow. Do not upload the persistent data folder and do not embed real credentials.
-
-
-## V1.0.6: allowed 10GE mapping reassignment
-If DUT changes `nas0_2.port10ge` from 1 to 0 while `nas0_0.port10ge` becomes 1, and **all other non-target fields remain unchanged**, the transfer is allowed and noted as `nas0_2 -> nas0_0 (LAN_1 10GE)`. Any other unintended WAN change remains FAIL. 19/19 nas0_0 MATCH still mandatory.
-
-Cumulative Excel report `WAN_IP_Allocation.xlsx` now has `Port Mapping Transfer` as its last column. Preserve the entire `records` folder between runs and back it up before changing versions. Earlier NG/HOLD rows remain intact; this version does not retroactively rewrite their outcomes.
-
-## V1.0.7 changes and migration
-- After **Read & Compare** the GUI shows `READY_TO_APPLY` for target differences, or `ALREADY_CONFIGURED` if 19/19 match. This is a pre-write assessment, not an Apply failure.
-- Apply confirmation is a single **OK / Cancel** prompt showing target IP and MAC; no typed phrase is needed.
-- Allocation ledger now lives at `%LOCALAPPDATA%\GRG4361_WAN_Setting\records` on Windows across upgrades. First import V1.0.5/V1.0.6 `WAN_IP_Allocation.csv` with the **Import previous IP allocation CSV** button. Import multiple historical CSV files if allocations are spread across folders. Conflicting assignments are rejected; review them manually.
-- The **Initialize new ledger** button is only for a verified clean, never-used range; it requires a deliberate confirmation. Until the ledger is initialized/imported, WAN writing is blocked.
-- Backup the legacy `records/` folders before upgrading. The new persistent location is local to one Windows user on one PC. Concurrent multi-PC operations remain unsupported.
+## Storage and migration safeguards
+- The workbook is the persistent source of truth **for this folder**. Switching EXE folder makes a new ledger; move/copy the entire `records` folder when replacing a build, or choose a fixed EXE location.
+- A new workbook cannot detect previous allocations on other computers. For Production, import audited legacy records, or run from a shared controlled workspace with serialized operation.
+- The original V1.0.7 AppData ledger is not deleted or silently migrated. Backup it and import its CSV if necessary.
+- Legacy CSVs may still be created by *legacy unit tests* in temporary test directories; the V1.0.8 GUI does not create CSV reports.
+- Current release is Pilot; Windows GitHub Actions and DUT validation are pending.
