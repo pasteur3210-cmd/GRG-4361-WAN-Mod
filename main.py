@@ -3,8 +3,8 @@ from tkinter import ttk, messagebox, simpledialog
 from threading import Thread
 from wan_tool import WanSession, comparison_summary, save_manual_review, check_identity, read_ledger, allocation_state, ledger_event
 
-VERSION = 'V1.0.5'
-root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.0.5 - Pilot');root.geometry('1160x830')
+VERSION = 'V1.0.6'
+root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.0.6 - Pilot');root.geometry('1160x830')
 frm=ttk.Frame(root,padding=14);frm.pack(fill='both',expand=True)
 entries=[]
 for i,(name,default,show) in enumerate([('DUT IP','192.168.1.1',None),('Username','root',None),('Password','', '*')]):

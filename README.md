@@ -1,4 +1,4 @@
-# GRG-4361u WAN Setting Tool V1.0.5 — 10-unit Pilot
+# GRG-4361u WAN Setting Tool V1.0.6 — 10-unit Pilot
 
 Windows 11 / Edge, compile using GitHub Actions on Python 3.11. Pilot: only use on recoverable test DUTs until station acceptance is signed.
 
@@ -26,3 +26,9 @@ nas0_0, VLAN ID=160, multicast VLAN ID=160, priority 0 (HTTP value 1), INTERNET/
 
 ## Build
 Upload only Clean ZIP contents to a new GitHub repository root; Actions > GRG4361 WAN Windows Build > Run workflow. Do not upload `records/` and do not embed real credentials.
+
+
+## V1.0.6: allowed 10GE mapping reassignment
+If DUT changes `nas0_2.port10ge` from 1 to 0 while `nas0_0.port10ge` becomes 1, and **all other non-target fields remain unchanged**, the transfer is allowed and noted as `nas0_2 -> nas0_0 (LAN_1 10GE)`. Any other unintended WAN change remains FAIL. 19/19 nas0_0 MATCH still mandatory.
+
+Cumulative Excel report `WAN_IP_Allocation.xlsx` now has `Port Mapping Transfer` as its last column. Preserve the entire `records` folder between runs and back it up before changing versions. Earlier NG/HOLD rows remain intact; this version does not retroactively rewrite their outcomes.

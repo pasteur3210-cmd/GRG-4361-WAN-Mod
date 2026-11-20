@@ -158,6 +158,42 @@ def ensure_target_device(configs):
     return candidates[0]
 
 
+# Only the known LAN_1 (10GE) migration from nas0_2 to nas0_0 is allowed.
+# All other fields on all non-target WANs remain strictly protected.
+TRANSFER_LABEL = 'nas0_2 -> nas0_0 (LAN_1 10GE)'
+
+def verify_non_target_wans(before, after):
+    """Return (allowed, transfer_label, violations), checking complete WAN snapshots.
+
+    Missing/new interfaces are violations. Never allow unrelated changes.
+    The one permitted change is nas0_2.port10ge 1 -> 0, only when
+    nas0_0.port10ge is 1 after the operation.
+    """
+    violations = []
+    transfer = ''
+    before_names = set(before) - {'nas0_0'}
+    after_names = set(after) - {'nas0_0'}
+    if before_names != after_names:
+        violations.append('Non-target WAN interfaces changed: before=%s after=%s' %
+                          (sorted(before_names), sorted(after_names)))
+    target_port_ok = after.get('nas0_0', {}).get('port10ge') == 1
+    for name in sorted(before_names | after_names):
+        if name not in before or name not in after:
+            continue
+        prior, current = before[name], after[name]
+        for key in sorted(set(prior) | set(current)):
+            old, new = prior.get(key), current.get(key)
+            if key in prior and key in current and old == new:
+                continue
+            if (name == 'nas0_2' and key == 'port10ge'
+                    and key in prior and key in current
+                    and old == 1 and new == 0 and target_port_ok):
+                transfer = TRANSFER_LABEL
+                continue
+            violations.append('%s.%s: %r -> %r' % (name, key, old, new))
+    return not violations, transfer, violations
+
+
 def write_record(folder,router,stage,result,details,before=None,after=None):
     folder=Path(folder);folder.mkdir(parents=True,exist_ok=True)
     line={'timestamp':datetime.now().isoformat(timespec='seconds'),'router':router,
@@ -234,14 +270,23 @@ class WanSession:
             time.sleep(2)
             new_configs,new_token,new_html=read_wan(self.client)
             after={c.name:config_values(c) for c in new_configs}
-            unchanged=all(after.get(name)==snapshot for name,snapshot in self.snapshot_before.items() if name!='nas0_0')
+            protected, transfer, violations = verify_non_target_wans(self.snapshot_before, after)
             basic=extended_comparison(new_html,self.target,compare_basic(ensure_target_device(new_configs),self.target))
-            basic_ok=all(v['status']=='MATCH' for v in basic.values() if v['status']!='UNKNOWN')
-            missing='All target fields must match DUT readback'
-            # Never report PASS until all target settings can be verified.
-            result='OK' if basic_ok and unchanged and all(v['status']=='MATCH' for v in basic.values()) else ('FAIL' if (not basic_ok or not unchanged) else 'VERIFY_INCOMPLETE')
-            if not unchanged: missing='Non-target WAN settings changed'
-            if not basic_ok: missing='Basic WAN setting mismatch'
+            statuses=[v['status'] for v in basic.values()]
+            target_bad = 'DIFF' in statuses
+            target_unknown = 'UNKNOWN' in statuses
+            result = ('FAIL' if (target_bad or not protected)
+                      else 'VERIFY_INCOMPLETE' if target_unknown else 'OK')
+            if not protected:
+                missing='Non-target WAN changes: ' + '; '.join(violations)
+            elif target_bad:
+                missing='Target WAN setting mismatch: ' + ', '.join(k for k,v in basic.items() if v['status']=='DIFF')
+            elif target_unknown:
+                missing='Target WAN readback incomplete: ' + ', '.join(k for k,v in basic.items() if v['status']=='UNKNOWN')
+            else:
+                missing='All 19 target settings verified'
+            if transfer:
+                missing += '; Allowed Port Mapping Transfer: ' + transfer
             write_record(self.output_dir,self.host,'APPLY',result,missing,self.snapshot_before,after)
             (self.output_dir/'after.json').write_text(json.dumps(after,indent=2),encoding='utf-8')
             (self.output_dir/'after_comparison.json').write_text(json.dumps(basic,indent=2,ensure_ascii=False),encoding='utf-8')
@@ -359,10 +404,14 @@ def export_ledger_excel(folder):
     from openpyxl.styles import PatternFill, Font, Alignment
     from openpyxl.utils import get_column_letter
     wb=Workbook();ws=wb.active;ws.title='IP Allocation Record'
-    ws.append(LEDGER_FIELDS)
-    for r in read_ledger(folder):ws.append([r.get(f,'') for f in LEDGER_FIELDS])
-    ws.freeze_panes='A2';ws.auto_filter.ref=f'A1:I{ws.max_row}'
-    widths=[22,17,22,18,20,20,20,20,58]
+    extra='Port Mapping Transfer'
+    ws.append(LEDGER_FIELDS+[extra])
+    for r in read_ledger(folder):
+        notes=r.get('notes','')
+        transfer=TRANSFER_LABEL if ('Allowed Port Mapping Transfer: ' + TRANSFER_LABEL) in notes else ''
+        ws.append([r.get(f,'') for f in LEDGER_FIELDS]+[transfer])
+    ws.freeze_panes='A2';ws.auto_filter.ref=f'A1:J{ws.max_row}'
+    widths=[22,17,22,18,20,20,20,20,74,32]
     for i,w in enumerate(widths,1):ws.column_dimensions[get_column_letter(i)].width=w
     for c in ws[1]:c.fill=PatternFill('solid',fgColor='17365D');c.font=Font(color='FFFFFF',bold=True);c.alignment=Alignment(vertical='center')
     ws.row_dimensions[1].height=25
