@@ -36,4 +36,4 @@ def test_conflicting_legacy_ledgers_block():
 
 def test_fixed_storage_path(monkeypatch):
     monkeypatch.setenv('LOCALAPPDATA',r'C:\Users\QA\AppData\Local')
-    assert str(stable_records_dir()).endswith('GRG4361_WAN_Setting/records')
+    assert stable_records_dir().parts[-2:] == ('GRG4361_WAN_Setting', 'records')
