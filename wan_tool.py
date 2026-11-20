@@ -5,7 +5,7 @@ from pathlib import Path
 from urllib.parse import urljoin
 from html import escape
 from bs4 import BeautifulSoup
-import csv, json, ipaddress, re, time, os, uuid, contextlib
+import csv, json, ipaddress, re, time, os, uuid, contextlib, shutil
 from router_oqc.client import RouterClient, RouterError
 from router_oqc.wan_config_client import read_wan, BRIDGE_FIELDS
 from router_oqc.post_security import post_security_flag
@@ -318,6 +318,63 @@ def save_manual_review(folder, host, comparison, confirmed, operator, notes):
     return record
 
 
+# Stable data path, independent of EXE location and working directory.
+def stable_records_dir():
+    base=os.environ.get('LOCALAPPDATA') or str(Path.home()/'.local'/'share')
+    return Path(base)/'GRG4361_WAN_Setting'/'records'
+
+
+def ledger_initialized(folder):
+    return (Path(folder)/'WAN_IP_Allocation.csv').exists() and (Path(folder)/'WAN_IP_Allocation.csv').stat().st_size>0
+
+
+def initialize_empty_ledger(folder):
+    """Explicit operator approval is required before a new, empty ledger is created."""
+    folder=Path(folder);folder.mkdir(parents=True,exist_ok=True)
+    with ledger_lock(folder):
+        path=folder/'WAN_IP_Allocation.csv'
+        if path.exists():return False
+        with path.open('x',newline='',encoding='utf-8-sig') as out:
+            csv.DictWriter(out,fieldnames=LEDGER_FIELDS).writeheader()
+    export_ledger_excel(folder)
+    return True
+
+
+def import_legacy_ledger(folder, source):
+    """Merge old ledger transaction history; reject any cross-MAC active IP collision."""
+    folder=Path(folder);source=Path(source)
+    if source.name!='WAN_IP_Allocation.csv':raise ValueError('Select WAN_IP_Allocation.csv from previous records folder')
+    if not source.exists():raise FileNotFoundError(source)
+    imported=read_ledger(source.parent)
+    if not imported:raise ValueError('Legacy ledger is empty')
+    if any(not row.get('device_mac') or not row.get('target_ip') for row in imported):
+        raise ValueError('Legacy CSV has missing identity / IP fields')
+    with ledger_lock(folder):
+        existing=read_ledger(folder)
+        # Deduplicate exact events. Reconcile active allocations across all logs.
+        unique_existing={tuple(row.get(k,'') for k in LEDGER_FIELDS) for row in existing}
+        additions=[row for row in imported if tuple(row.get(k,'') for k in LEDGER_FIELDS) not in unique_existing]
+        combined=existing+additions
+        active=allocation_state(combined)
+        ip_owner={}
+        for mac,row in active.items():
+            if row.get('result') in ('RESERVED','OK','VERIFY_INCOMPLETE','MANUAL_OK','HOLD'):
+                ip=row.get('target_ip')
+                if ip in ip_owner and ip_owner[ip]!=mac:
+                    raise ValueError('Conflicting historical IP assignment '+ip+' for '+ip_owner[ip]+' and '+mac+'; resolve manually')
+                ip_owner[ip]=mac
+        dest=folder/'WAN_IP_Allocation.csv';dest.parent.mkdir(parents=True,exist_ok=True)
+        # No change to existing history until all conflicts are checked.
+        if additions:
+            with dest.open('a',encoding='utf-8-sig',newline='') as out:
+                w=csv.DictWriter(out,fieldnames=LEDGER_FIELDS)
+                if out.tell()==0:w.writeheader()
+                for row in additions:w.writerow({k:row.get(k,'') for k in LEDGER_FIELDS})
+                out.flush();os.fsync(out.fileno())
+    export_ledger_excel(folder)
+    return len(additions)
+
+
 # Persistent per-device IP ledger. Source of truth is CSV; Xlsx is a derived report.
 LEDGER_FIELDS=['time','event','result','operator','device_mac','gpon_sn','target_ip','router_ip','notes']
 
@@ -364,6 +421,8 @@ def allocation_state(rows):
     return current
 
 def reserve_ip(folder,mac,gpon,target_ip,router_ip,operator):
+    if not ledger_initialized(folder):
+        raise ValueError('Allocation ledger not initialized. Import old records or explicitly initialize a new ledger first.')
     mac,gpon=check_identity(mac,gpon)
     if ipaddress.IPv4Address(target_ip) not in ipaddress.IPv4Network('192.168.2.0/24') or not 121<=int(target_ip.split('.')[-1])<=130:
         raise ValueError('Allowed target IP range is 192.168.2.121 to 192.168.2.130')

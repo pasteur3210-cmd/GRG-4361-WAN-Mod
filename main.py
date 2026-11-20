@@ -1,10 +1,12 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog
+from pathlib import Path
+from tkinter import ttk, messagebox, simpledialog, filedialog
 from threading import Thread
-from wan_tool import WanSession, comparison_summary, save_manual_review, check_identity, read_ledger, allocation_state, ledger_event
+from wan_tool import WanSession, comparison_summary, save_manual_review, check_identity, read_ledger, allocation_state, ledger_event, stable_records_dir, ledger_initialized, initialize_empty_ledger, import_legacy_ledger
 
-VERSION = 'V1.0.6'
-root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.0.6 - Pilot');root.geometry('1160x830')
+VERSION = 'V1.0.7'
+DATA_DIR = stable_records_dir()
+root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.0.7 - Pilot');root.geometry('1160x830')
 frm=ttk.Frame(root,padding=14);frm.pack(fill='both',expand=True)
 entries=[]
 for i,(name,default,show) in enumerate([('DUT IP','192.168.1.1',None),('Username','root',None),('Password','', '*')]):
@@ -32,9 +34,9 @@ ttk.Label(frm,textvariable=counts_var,font=('Segoe UI',10)).grid(row=8,column=2,
 state={'session':None,'busy':False,'comparison':None,'last_apply':False}
 
 def refresh_allocation():
-    rows=allocation_state(read_ledger('records'))
+    rows=allocation_state(read_ledger(DATA_DIR))
     used={v['target_ip'] for v in rows.values() if v['result'] in ('RESERVED','HOLD','OK','VERIFY_INCOMPLETE','MANUAL_OK')}
-    allocation_var.set('Allocated / reserved: '+(', '.join(sorted(used,key=lambda a:int(a.split('.')[-1]))) if used else 'None'))
+    allocation_var.set('Allocated / reserved: '+(', '.join(sorted(used,key=lambda a:int(a.split('.')[-1]))) if used else ('None (ledger initialized)' if ledger_initialized(DATA_DIR) else 'NOT INITIALIZED — import previous CSV first')))
     return used
 
 def show_result(value, comparison=None):
@@ -43,7 +45,7 @@ def show_result(value, comparison=None):
         counts_var.set('MATCH: {MATCH}     DIFF: {DIFF}     UNKNOWN: {UNKNOWN}'.format(**c))
     result_var.set('OVERALL: '+value)
     palette={'OK':'#167a37','NG':'#b42318','FAIL':'#b42318','VERIFY_INCOMPLETE':'#a46100',
-             'MANUAL_OK':'#167a37','MANUAL_NG':'#b42318','READ_ERROR':'#b42318'}
+             'MANUAL_OK':'#167a37','MANUAL_NG':'#b42318','READ_ERROR':'#b42318','READY_TO_APPLY':'#205b96','ALREADY_CONFIGURED':'#167a37'}
     result_label.configure(fg=palette.get(value,'#444444'))
 
 def log(message):
@@ -67,12 +69,13 @@ def do_read():
     if state['session']:state['session'].close()
     mac,gpon=check_identity(mac_ent.get(),gpon_ent.get())
     if not operator_ent.get().strip():raise ValueError('Operator required')
-    session=WanSession(entries[0].get(),entries[1].get(),entries[2].get(),target_ip=ip_var.get(),mac=mac,gpon_sn=gpon,operator=operator_ent.get())
+    session=WanSession(entries[0].get(),entries[1].get(),entries[2].get(),output_dir=DATA_DIR,target_ip=ip_var.get(),mac=mac,gpon_sn=gpon,operator=operator_ent.get())
     state['session']=session
     comparison=session.read();state['comparison']=comparison;state['last_apply']=False
     overall,_=comparison_summary(comparison)
-    root.after(0,lambda:show_result(overall,comparison))
-    log('READ & COMPARE: '+overall)
+    read_display=('READY_TO_APPLY' if overall=='NG' else 'ALREADY_CONFIGURED' if overall=='OK' else overall)
+    root.after(0,lambda:show_result(read_display,comparison))
+    log('READ & COMPARE: '+read_display+' (configuration comparison: '+overall+')')
     for k,v in comparison.items():
         log(f"{k:18s} current={str(v['current']):17s} target={v['target']}  {v['status']}")
 
@@ -82,10 +85,11 @@ def do_apply():
     if (state['session'].target['ip']!=ip_var.get() or
         (state['session'].mac,state['session'].gpon_sn)!=check_identity(mac_ent.get(),gpon_ent.get())):
         messagebox.showwarning('Read again','Device identity or target IP changed. Read & Compare again first.');return
-    if not messagebox.askyesno('Experimental DUT write','Write nas0_0 / target '+ip_var.get()+' / MAC '+state['session'].mac+'? TEST DUT ONLY. Continue?'):
+    if not ledger_initialized(DATA_DIR):
+        messagebox.showerror('IP ledger required','First import WAN_IP_Allocation.csv from the older records folder, or explicitly initialize a new ledger after auditing existing device assignments.');return
+    if not messagebox.askyesno('Confirm WAN write','TEST DUT ONLY — no verified rollback.\n\nWAN: nas0_0\nTarget IP: '+ip_var.get()+'\nMAC: '+state['session'].mac+'\nGPON SN: '+state['session'].gpon_sn+'\n\nApply & verify?'):
         return
-    confirm=simpledialog.askstring('Confirm write','Type exactly: APPLY nas0_0',parent=root)
-    if confirm!='APPLY nas0_0':return
+    confirm='APPLY nas0_0'  # Internal API guard, not an operator typing step.
     def task():
         state['last_apply']=True
         result, detail, comparison=state['session'].apply_experimental(confirm)
@@ -133,8 +137,35 @@ applybtn.grid(row=9,column=1,pady=8,sticky='w')
 manualbtn=ttk.Button(frm,text='3. Manual Web GUI Review',command=manual_review)
 manualbtn.grid(row=9,column=2,pady=8,sticky='w')
 ttk.Label(frm,text='Automatic UNKNOWN ≠ NG or PASS. Manual OK is recorded separately. No verified rollback; test DUT only.',foreground='#a46100',wraplength=970).grid(row=10,column=0,columnspan=4,sticky='w')
-text=tk.Text(frm,width=135,height=26,font=('Consolas',10));text.grid(row=11,column=0,columnspan=4,sticky='nsew',pady=10)
-frm.rowconfigure(11,weight=1);frm.columnconfigure(2,weight=1)
+def import_old_records():
+    if state['busy']:return
+    path=filedialog.askopenfilename(title='Select old WAN_IP_Allocation.csv',filetypes=[('WAN IP Allocation CSV','WAN_IP_Allocation.csv'),('CSV','*.csv')])
+    if not path:return
+    try:
+        count=import_legacy_ledger(DATA_DIR,path)
+        refresh_allocation()
+        messagebox.showinfo('Imported',f'Imported {count} new historical events.\nStored at: {DATA_DIR}')
+    except Exception as exc:messagebox.showerror('Import blocked',str(exc))
+
+
+def create_ledger():
+    if state['busy']:return
+    if ledger_initialized(DATA_DIR):
+        messagebox.showinfo('Already initialized',str(DATA_DIR));return
+    if not messagebox.askyesno('Initialize NEW IP ledger',
+            'Only proceed if all previous 192.168.2.121–130 device allocations have been audited.\n'
+            'Existing V1.0.5/V1.0.6 records must be imported instead of creating an empty ledger.\n\nCreate empty ledger?'):
+        return
+    try:
+        initialize_empty_ledger(DATA_DIR);refresh_allocation()
+    except Exception as exc:messagebox.showerror('Initialization failed',str(exc))
+
+ttk.Label(frm,text='Persistent records: '+str(DATA_DIR),wraplength=980).grid(row=11,column=0,columnspan=4,sticky='w')
+ttk.Button(frm,text='Import previous IP allocation CSV',command=import_old_records).grid(row=12,column=0,columnspan=2,sticky='w',pady=3)
+ttk.Button(frm,text='Initialize new ledger (only after audit)',command=create_ledger).grid(row=12,column=2,columnspan=2,sticky='w',pady=3)
+
+text=tk.Text(frm,width=135,height=26,font=('Consolas',10));text.grid(row=13,column=0,columnspan=4,sticky='nsew',pady=10)
+frm.rowconfigure(13,weight=1);frm.columnconfigure(2,weight=1)
 
 def shutdown():
     if state['busy']:

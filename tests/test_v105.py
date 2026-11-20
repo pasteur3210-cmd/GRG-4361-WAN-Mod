@@ -2,7 +2,7 @@ import tempfile
 from pathlib import Path
 import pytest
 from wan_tool import (check_identity, reserve_ip, ledger_event, read_ledger,
-                      allocation_state, build_payload, TARGET)
+                      allocation_state, build_payload, TARGET, initialize_empty_ledger)
 from router_oqc.wan_config_parser import parse_wan_config_page
 from wan_tool import compare_basic,extended_comparison,comparison_summary
 
@@ -19,6 +19,7 @@ def test_identity():
 
 def test_unique_allocation():
     with tempfile.TemporaryDirectory() as folder:
+        initialize_empty_ledger(folder)
         reserve_ip(folder,'001122AABBCC','CMTD22AABBCC','192.168.2.121','192.168.1.1','QA')
         assert Path(folder,'WAN_IP_Allocation.xlsx').exists()
         with pytest.raises(ValueError):
