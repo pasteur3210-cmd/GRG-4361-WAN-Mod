@@ -4,13 +4,14 @@ import sys
 from tkinter import ttk, messagebox, simpledialog, filedialog
 from threading import Thread
 from wan_tool import WanSession, comparison_summary, save_manual_review, check_identity
-from default_verify import snapshot, save_baseline, verify, baseline_path
+from default_verify import snapshot, save_baseline, verify, baseline_path, install_reference_if_missing
 from unified_store import ensure_workbook, read_rows, ip_state, import_legacy_csv, workbook_path, ACTIVE
 
-VERSION = 'V1.1.2'
+VERSION = 'V1.1.3'
 DATA_DIR = (Path(sys.executable).resolve().parent if getattr(sys,'frozen',False) else Path(__file__).resolve().parent) / 'records'
 ensure_workbook(DATA_DIR)
-root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.1.2');root.geometry('1160x830')
+install_reference_if_missing(DATA_DIR)
+root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.1.3');root.geometry('1160x830')
 frm=ttk.Frame(root,padding=14);frm.pack(fill='both',expand=True)
 entries=[]
 for i,(name,default,show) in enumerate([('DUT IP','192.168.1.1',None),('Username','root',None),('Password','', '*')]):
@@ -185,7 +186,7 @@ def import_old_records():
 def capture_golden():
     if state['busy']:return
     if baseline_path(DATA_DIR).exists():
-        messagebox.showerror('Golden exists','Factory Golden already captured. Overwrite is blocked to protect the approved baseline.');return
+        messagebox.showerror('Golden exists','Factory Golden is already available (including built-in reference). Overwrite is blocked to protect the approved baseline.');return
     if not operator_var.get().strip():
         messagebox.showerror('Operator required','Set Operator before capturing Golden.');return
     if not messagebox.askyesno('Approve factory default Golden',
@@ -210,14 +211,14 @@ def check_defaults():
         return
     def task():
         result,counts,rows=verify(DATA_DIR,entries[0].get(),entries[1].get(),entries[2].get(),mac,gpon,operator_var.get(),mode_var.get())
-        log('DEFAULT VERIFY: '+result+' '+str(counts))
+        log('DEFAULT VERIFY (independent session): '+result+' '+str(counts))
         for interface,field,expected,actual,status in rows:
             if status!='MATCH':log(f'  {interface}.{field}: expected={expected}, actual={actual} [{status}]')
         root.after(0,lambda:show_result('OK' if result=='PASS' else 'NG' if result=='FAIL' else 'VERIFY_INCOMPLETE'))
         root.after(0,lambda:messagebox.showinfo('Default verification',result+'\n'+str(counts)))
     run(task)
 
-capturebtn=ttk.Button(frm,text='Capture Factory Golden (once)',command=capture_golden)
+capturebtn=ttk.Button(frm,text='Capture Factory Golden (Engineering only)',command=capture_golden)
 capturebtn.grid(row=14,column=0,columnspan=2,sticky='w',pady=4)
 defaultbtn=ttk.Button(frm,text='4. Verify Default Settings',command=check_defaults)
 defaultbtn.grid(row=14,column=2,columnspan=2,sticky='w',pady=4)

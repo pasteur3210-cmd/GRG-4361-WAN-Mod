@@ -1,6 +1,6 @@
 """Read-only, explicitly operator-approved factory-default baseline and verification."""
 from __future__ import annotations
-import hashlib,json
+import hashlib,json,shutil,sys
 from pathlib import Path
 from datetime import datetime
 from router_oqc.client import RouterClient
@@ -9,7 +9,7 @@ from wan_tool import config_values
 from unified_store import add_default_verification
 
 BASELINE='GRG4361_Factory_Default_Golden.json'
-VERSION='V1.1.2'
+VERSION='V1.1.3'
 
 def snapshot(host,username,password):
     client=RouterClient(host.strip(),protocol='http',timeout=12)
@@ -23,6 +23,24 @@ def snapshot(host,username,password):
     finally:client.close()
 
 def baseline_path(folder):return Path(folder)/BASELINE
+
+def install_reference_if_missing(folder):
+    """Copy supplied validated Golden once. Do not overwrite a site-approved Golden.
+
+    The bundled source was captured from user's 2026-11-20 records(10).zip.
+    It is a user-captured reference, not proof of independent factory approval.
+    """
+    dest=baseline_path(folder)
+    if dest.exists():return dest
+    base=Path(getattr(sys,'_MEIPASS',Path(__file__).resolve().parent))
+    reference=base/'factory_default_reference.json'
+    if not reference.exists():return None
+    item=json.loads(reference.read_text(encoding='utf-8'))
+    if item.get('sha256')!=_hash(item.get('interfaces')):
+        raise ValueError('Bundled factory reference checksum mismatch')
+    dest.parent.mkdir(parents=True,exist_ok=True)
+    shutil.copyfile(reference,dest)
+    return dest
 
 def _hash(data):return hashlib.sha256(json.dumps(data,sort_keys=True,ensure_ascii=False).encode('utf-8')).hexdigest()
 
@@ -60,10 +78,14 @@ def compare_defaults(expected,actual):
     return result,counts,rows
 
 def verify(folder,host,user,password,mac,gpon,operator,mode):
+    install_reference_if_missing(folder)
     item=load_baseline(folder)
     current=snapshot(host,user,password)
     result,counts,rows=compare_defaults(item['interfaces'],current)
-    detail='Factory default: '+str(counts)
+    from unified_store import last_wan_apply
+    linked=last_wan_apply(folder,mac,gpon)
+    relation=('Linked WAN APPLY '+linked['Time']+' / '+linked['Result']+' / '+linked['Target IP']) if linked else 'No prior WAN APPLY in this workbook; independent default verification'
+    detail='Factory default: '+str(counts)+'; '+relation
     add_default_verification(folder,VERSION,mode,host,mac,gpon,operator,result,counts,item['sha256'],detail,rows)
     folder=Path(folder)
     (folder/'default_verification_latest.json').write_text(json.dumps({'result':result,'counts':counts,'golden_sha256':item['sha256'],'actual':current,'comparison':rows},ensure_ascii=False,indent=2),encoding='utf-8')

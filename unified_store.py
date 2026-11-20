@@ -201,3 +201,17 @@ def add_default_verification(folder, version, mode, router, mac, gpon, operator,
             data[4].append([stamp,mac,gpon,interface,field,str(expected),str(actual),status,fingerprint])
         data[2].append([stamp,version,mode,router,'DEFAULT_VERIFY',result,mac,gpon,'',operator,details])
         _write(path,data)
+
+
+def last_wan_apply(folder,mac,gpon):
+    """Find persisted most recent WAN APPLY after a separate program launch.
+
+    Only fully matching MAC+GPON SN is considered; never infer link from router IP.
+    """
+    mac=''.join(c for c in str(mac).upper() if c in '0123456789ABCDEF')
+    gpon=str(gpon).strip().upper()
+    candidates=[r for r in read_rows(folder,0)
+                if r.get('Stage')=='APPLY'
+                and ''.join(c for c in str(r.get('MAC','')).upper() if c in '0123456789ABCDEF')==mac
+                and str(r.get('GPON SN','')).strip().upper()==gpon]
+    return candidates[-1] if candidates else None
