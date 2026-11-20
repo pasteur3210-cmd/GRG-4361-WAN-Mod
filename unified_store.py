@@ -11,11 +11,13 @@ from xml.etree import ElementTree as ET
 import csv, io, json, os, tempfile, time, zipfile, re
 
 FILE = 'GRG4361_WAN_Master_Record.xlsx'
-SHEETS = ['WAN Setting Master Record', 'IP Allocation', 'Test History']
+SHEETS = ['WAN Setting Master Record', 'IP Allocation', 'Test History', 'Default Verification Summary', 'Default Verification Detail']
 HEADERS = [
  ['Time','Version','Mode','Router IP','Stage','Result','MAC','GPON SN','Target IP','Operator','Details','Before JSON','After JSON'],
  ['Time','Event','Result','Mode','Operator','MAC','GPON SN','Target IP','Router IP','Notes'],
- ['Time','Version','Mode','Router IP','Stage','Result','MAC','GPON SN','Target IP','Operator','Notes']]
+ ['Time','Version','Mode','Router IP','Stage','Result','MAC','GPON SN','Target IP','Operator','Notes'],
+ ['Time','Version','Mode','Router IP','MAC','GPON SN','Operator','Result','MATCH','DIFF','UNKNOWN','Golden SHA256','Details'],
+ ['Time','MAC','GPON SN','Interface','Field','Expected','Actual','Result','Golden SHA256']]
 NS='http://schemas.openxmlformats.org/spreadsheetml/2006/main'
 PKG='http://schemas.openxmlformats.org/package/2006/relationships'
 RNS='http://schemas.openxmlformats.org/officeDocument/2006/relationships'
@@ -53,7 +55,7 @@ def _write(path,data):
   template=Path(__file__).resolve().parent/'template.xlsx'
   with zipfile.ZipFile(template) as source, zipfile.ZipFile(tmp,'w',compression=zipfile.ZIP_DEFLATED) as dest:
    for item in source.infolist():
-    match=re.fullmatch(r'xl/worksheets/sheet([123])\.xml',item.filename)
+    match=re.fullmatch(r'xl/worksheets/sheet([1-5])\.xml',item.filename)
     content=_sheet_xml(data[int(match.group(1))-1]) if match else source.read(item.filename)
     dest.writestr(item.filename,content)
   os.replace(tmp,path)
@@ -68,7 +70,9 @@ def _read(path):
   if 'xl/sharedStrings.xml' in z.namelist():
    sr=ET.fromstring(z.read('xl/sharedStrings.xml'))
    shared=[''.join(t.text or '' for t in x.iter(f'{{{NS}}}t')) for x in sr.findall(f'{{{NS}}}si')]
-  for i in range(1,4):
+  for i in range(1,len(SHEETS)+1):
+   if f'xl/worksheets/sheet{i}.xml' not in z.namelist():
+    data.append([list(HEADERS[i-1])]);continue
    root=ET.fromstring(z.read(f'xl/worksheets/sheet{i}.xml'))
    sheet=[]
    for row in root.findall(f'.//{{{NS}}}sheetData/{{{NS}}}row'):
@@ -114,6 +118,10 @@ def ensure_workbook(folder):
  with locked(folder):
   path=workbook_path(folder)
   if not path.exists():_write(path,[[list(h)] for h in HEADERS])
+  else:
+   existing=_read(path)
+   with zipfile.ZipFile(path) as z:
+    if f'xl/worksheets/sheet{len(SHEETS)}.xml' not in z.namelist():_write(path,existing)
  return workbook_path(folder)
 
 def ip_state(folder):
@@ -174,3 +182,15 @@ def import_legacy_csv(folder,path,mode='Production'):
    data[1].append(row);existing.add(tuple(row));current[row[5]]=row;added+=1
   _write(dest,data)
  return added
+
+
+def add_default_verification(folder, version, mode, router, mac, gpon, operator, result, counts, fingerprint, details, fields):
+    """Append one immutable summary + individual field comparisons in one atomic write."""
+    stamp=datetime.now().isoformat(timespec='seconds')
+    with locked(folder):
+        path=workbook_path(folder);data=_read(path)
+        data[3].append([stamp,version,mode,router,mac,gpon,operator,result,str(counts['MATCH']),str(counts['DIFF']),str(counts['UNKNOWN']),fingerprint,details])
+        for interface,field,expected,actual,status in fields:
+            data[4].append([stamp,mac,gpon,interface,field,str(expected),str(actual),status,fingerprint])
+        data[2].append([stamp,version,mode,router,'DEFAULT_VERIFY',result,mac,gpon,'',operator,details])
+        _write(path,data)

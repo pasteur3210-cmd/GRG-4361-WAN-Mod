@@ -4,12 +4,13 @@ import sys
 from tkinter import ttk, messagebox, simpledialog, filedialog
 from threading import Thread
 from wan_tool import WanSession, comparison_summary, save_manual_review, check_identity
+from default_verify import snapshot, save_baseline, verify, baseline_path
 from unified_store import ensure_workbook, read_rows, ip_state, import_legacy_csv, workbook_path, ACTIVE
 
-VERSION = 'V1.1.0'
+VERSION = 'V1.1.1'
 DATA_DIR = (Path(sys.executable).resolve().parent if getattr(sys,'frozen',False) else Path(__file__).resolve().parent) / 'records'
 ensure_workbook(DATA_DIR)
-root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.1.0');root.geometry('1160x830')
+root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.1.1');root.geometry('1160x830')
 frm=ttk.Frame(root,padding=14);frm.pack(fill='both',expand=True)
 entries=[]
 for i,(name,default,show) in enumerate([('DUT IP','192.168.1.1',None),('Username','root',None),('Password','', '*')]):
@@ -84,7 +85,7 @@ def log(message):
 
 def busy(v):
     state['busy']=v
-    root.after(0,lambda:[b.configure(state='disabled' if v else 'normal') for b in (readbtn,applybtn,manualbtn)])
+    root.after(0,lambda:[b.configure(state='disabled' if v else 'normal') for b in (readbtn,applybtn,manualbtn,defaultbtn,capturebtn)])
 
 def run(fn):
     if state['busy']:return
@@ -181,6 +182,45 @@ def import_old_records():
         messagebox.showinfo('Imported',f'{count} legacy allocation events imported into Excel.\n'+str(workbook_path(DATA_DIR)))
     except Exception as exc:messagebox.showerror('Import blocked',str(exc))
 
+def capture_golden():
+    if state['busy']:return
+    if baseline_path(DATA_DIR).exists():
+        messagebox.showerror('Golden exists','Factory Golden already captured. Overwrite is blocked to protect the approved baseline.');return
+    if not operator_var.get().strip():
+        messagebox.showerror('Operator required','Set Operator before capturing Golden.');return
+    if not messagebox.askyesno('Approve factory default Golden',
+        'ONLY USE A VERIFIED FACTORY-RESTORED REFERENCE DUT.\n\n'
+        'Confirm manually: this DUT has undergone Restore Default, rebooted and its factory default status was independently checked.\n\n'
+        'Capture nas0_0/nas0_1/nas0_2 as a locked Golden baseline?'):
+        return
+    def task():
+        data=snapshot(entries[0].get(),entries[1].get(),entries[2].get())
+        item=save_baseline(DATA_DIR,data,operator_var.get(),True)
+        log('Factory Golden saved, SHA256: '+item['sha256'])
+        root.after(0,lambda:messagebox.showinfo('Golden captured','Golden captured. Review baseline JSON before enabling production verification.'))
+    run(task)
+
+def check_defaults():
+    if state['busy']:return
+    try:mac,gpon=check_identity(mac_ent.get(),gpon_ent.get())
+    except Exception as exc:messagebox.showerror('Identity required',str(exc));return
+    if not operator_var.get().strip():messagebox.showerror('Operator required','Set Operator first.');return
+    if not messagebox.askyesno('Verify default (read only)',
+        'Confirm DUT Restore Default and reboot are complete.\nNo settings will be written.\nRead WAN and compare approved Golden?'):
+        return
+    def task():
+        result,counts,rows=verify(DATA_DIR,entries[0].get(),entries[1].get(),entries[2].get(),mac,gpon,operator_var.get(),mode_var.get())
+        log('DEFAULT VERIFY: '+result+' '+str(counts))
+        for interface,field,expected,actual,status in rows:
+            if status!='MATCH':log(f'  {interface}.{field}: expected={expected}, actual={actual} [{status}]')
+        root.after(0,lambda:show_result('OK' if result=='PASS' else 'NG' if result=='FAIL' else 'VERIFY_INCOMPLETE'))
+        root.after(0,lambda:messagebox.showinfo('Default verification',result+'\n'+str(counts)))
+    run(task)
+
+capturebtn=ttk.Button(frm,text='Capture Factory Golden (once)',command=capture_golden)
+capturebtn.grid(row=14,column=0,columnspan=2,sticky='w',pady=4)
+defaultbtn=ttk.Button(frm,text='4. Verify Default Settings',command=check_defaults)
+defaultbtn.grid(row=14,column=2,columnspan=2,sticky='w',pady=4)
 ttk.Label(frm,text='Engineering = repeated test DUT; Production = strict IP uniqueness. Previous releases are not auto-imported.',foreground='#a46100',wraplength=980).grid(row=10,column=0,columnspan=4,sticky='e')
 ttk.Label(frm,text='Excel: '+str(workbook_path(DATA_DIR)),wraplength=980).grid(row=11,column=0,columnspan=4,sticky='w')
 ttk.Button(frm,text='Import legacy CSV (optional, one time)',command=import_old_records).grid(row=12,column=0,columnspan=3,sticky='w',pady=3)

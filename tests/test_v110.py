@@ -10,6 +10,6 @@ def test_operator_outside_scan_fields():
 
 def test_release_name_consistency():
     base=Path(__file__).resolve().parents[1]
-    assert "VERSION = 'V1.1.0'" in (base/'main.py').read_text()
-    assert "GRG4361_WAN_Setting_V1.1.0" in (base/'GRG4361_WAN.spec').read_text()
-    assert 'GRG4361_WAN_Setting_V1.1.0' in (base/'.github/workflows/build.yml').read_text()
+    assert "VERSION = 'V1.1.1'" in (base/'main.py').read_text()
+    assert "GRG4361_WAN_Setting_V1.1.1" in (base/'GRG4361_WAN.spec').read_text()
+    assert 'GRG4361_WAN_Setting_V1.1.1' in (base/'.github/workflows/build.yml').read_text()
