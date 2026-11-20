@@ -6,10 +6,10 @@ from threading import Thread
 from wan_tool import WanSession, comparison_summary, save_manual_review, check_identity
 from unified_store import ensure_workbook, read_rows, ip_state, import_legacy_csv, workbook_path, ACTIVE
 
-VERSION = 'V1.0.9'
+VERSION = 'V1.1.0'
 DATA_DIR = (Path(sys.executable).resolve().parent if getattr(sys,'frozen',False) else Path(__file__).resolve().parent) / 'records'
 ensure_workbook(DATA_DIR)
-root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.0.9 - Pilot');root.geometry('1160x830')
+root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.1.0');root.geometry('1160x830')
 frm=ttk.Frame(root,padding=14);frm.pack(fill='both',expand=True)
 entries=[]
 for i,(name,default,show) in enumerate([('DUT IP','192.168.1.1',None),('Username','root',None),('Password','', '*')]):
@@ -26,8 +26,33 @@ ttk.Label(frm,text='MAC (scan / input)').grid(row=4,column=0,sticky='w')
 mac_ent=ttk.Entry(frm,width=36);mac_ent.grid(row=4,column=1,sticky='w')
 ttk.Label(frm,text='GPON SN (CMTD + MAC last 8)').grid(row=5,column=0,sticky='w')
 gpon_ent=ttk.Entry(frm,width=36);gpon_ent.grid(row=5,column=1,sticky='w')
-ttk.Label(frm,text='Operator').grid(row=6,column=0,sticky='w')
-operator_ent=ttk.Entry(frm,width=36);operator_ent.grid(row=6,column=1,sticky='w')
+# Operator is intentionally outside the scanner's Tab/Return sequence.
+# It is configured once for a shift, and locked during DUT scanning.
+operator_var=tk.StringVar(value='')
+ttk.Label(frm,text='Operation Settings / Operator').grid(row=0,column=2,sticky='e',padx=8)
+operator_ent=ttk.Entry(frm,width=20,textvariable=operator_var,state='readonly',takefocus=0)
+operator_ent.grid(row=0,column=3,sticky='w')
+def change_operator():
+    if state['busy']:
+        return
+    value=simpledialog.askstring('Operator settings','Operator / Employee ID:',initialvalue=operator_var.get(),parent=root)
+    if value is not None and value.strip():
+        operator_var.set(value.strip())
+        mac_ent.focus_set()
+operator_btn=ttk.Button(frm,text='Change Operator',command=change_operator,takefocus=0)
+operator_btn.grid(row=1,column=3,sticky='w')
+# MAC scanner Enter -> GPON scanner; GPON scanner Enter stays on that field.
+def mac_scan_complete(event=None):
+    gpon_ent.focus_set()
+    return 'break'
+def gpon_scan_complete(event=None):
+    # Do not let the scanner's Enter submit Apply or reach other controls.
+    gpon_ent.focus_set()
+    return 'break'
+mac_ent.bind('<Return>',mac_scan_complete)
+gpon_ent.bind('<Return>',gpon_scan_complete)
+mac_ent.bind('<KP_Enter>',mac_scan_complete)
+gpon_ent.bind('<KP_Enter>',gpon_scan_complete)
 ttk.Label(frm,text='Target: nas0_0 / VLAN160 / Multicast160 / IPoE / INTERNET / Bridge / Static IP / 10GE',wraplength=970).grid(row=7,column=0,columnspan=4,sticky='w',pady=8)
 result_var=tk.StringVar(value='NOT TESTED')
 counts_var=tk.StringVar(value='MATCH: —     DIFF: —     UNKNOWN: —')
@@ -113,7 +138,7 @@ def do_apply():
                 used=refresh_allocation()
                 available=[ip for ip in ip_choices if ip not in used]
                 if available:ip_var.set(available[0])
-                mac_ent.delete(0,'end');gpon_ent.delete(0,'end')
+                mac_ent.delete(0,'end');gpon_ent.delete(0,'end');mac_ent.focus_set()
                 log('Next DUT: scan new MAC + GPON SN, then Read & Compare.')
             root.after(0,advance)
         if result=='VERIFY_INCOMPLETE':
@@ -169,5 +194,6 @@ def shutdown():
     if state['session']:state['session'].close()
     root.destroy()
 refresh_allocation()
+mac_ent.focus_set()
 root.protocol('WM_DELETE_WINDOW',shutdown)
 root.mainloop()
