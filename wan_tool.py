@@ -232,7 +232,7 @@ class WanSession:
         self.operator=operator.strip();self.lease_id=None
 
     def record(self,stage,result,details,before=None,after=None):
-        add_history(self.output_dir,'V1.1.2',self.mode,self.host,stage,result,self.mac,self.gpon_sn,self.target['ip'],self.operator,details,json.dumps(before or {},ensure_ascii=False),json.dumps(after or {},ensure_ascii=False))
+        add_history(self.output_dir,'V1.1.4',self.mode,self.host,stage,result,self.mac,self.gpon_sn,self.target['ip'],self.operator,details,json.dumps(before or {},ensure_ascii=False),json.dumps(after or {},ensure_ascii=False))
         with (self.output_dir/'execution.log').open('a',encoding='utf-8') as f:f.write(f'{datetime.now().isoformat()} {stage} {result} {details}\n')
 
     def close(self):self.client.close()

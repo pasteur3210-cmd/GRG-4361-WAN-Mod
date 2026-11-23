@@ -6,12 +6,14 @@ from threading import Thread
 from wan_tool import WanSession, comparison_summary, save_manual_review, check_identity
 from default_verify import snapshot, save_baseline, verify, baseline_path, install_reference_if_missing
 from unified_store import ensure_workbook, read_rows, ip_state, import_legacy_csv, workbook_path, ACTIVE
+from batch_manager import active_batch, new_batch
 
-VERSION = 'V1.1.3'
-DATA_DIR = (Path(sys.executable).resolve().parent if getattr(sys,'frozen',False) else Path(__file__).resolve().parent) / 'records'
+VERSION = 'V1.1.4'
+RECORDS_ROOT = (Path(sys.executable).resolve().parent if getattr(sys,'frozen',False) else Path(__file__).resolve().parent) / 'records'
+BATCH_ID, DATA_DIR = active_batch(RECORDS_ROOT)
 ensure_workbook(DATA_DIR)
 install_reference_if_missing(DATA_DIR)
-root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.1.3');root.geometry('1160x830')
+root=tk.Tk();root.title('GRG-4361u WAN Setting Tool V1.1.4');root.geometry('1160x830')
 frm=ttk.Frame(root,padding=14);frm.pack(fill='both',expand=True)
 entries=[]
 for i,(name,default,show) in enumerate([('DUT IP','192.168.1.1',None),('Username','root',None),('Password','', '*')]):
@@ -86,7 +88,7 @@ def log(message):
 
 def busy(v):
     state['busy']=v
-    root.after(0,lambda:[b.configure(state='disabled' if v else 'normal') for b in (readbtn,applybtn,manualbtn,defaultbtn,capturebtn)])
+    root.after(0,lambda:[b.configure(state='disabled' if v else 'normal') for b in (readbtn,applybtn,manualbtn,defaultbtn,capturebtn,newbatchbtn)])
 
 def run(fn):
     if state['busy']:return
@@ -223,8 +225,46 @@ capturebtn.grid(row=14,column=0,columnspan=2,sticky='w',pady=4)
 defaultbtn=ttk.Button(frm,text='4. Verify Default Settings',command=check_defaults)
 defaultbtn.grid(row=14,column=2,columnspan=2,sticky='w',pady=4)
 ttk.Label(frm,text='Engineering = repeated test DUT; Production = strict IP uniqueness. Previous releases are not auto-imported.',foreground='#a46100',wraplength=980).grid(row=10,column=0,columnspan=4,sticky='e')
-ttk.Label(frm,text='Excel: '+str(workbook_path(DATA_DIR)),wraplength=980).grid(row=11,column=0,columnspan=4,sticky='w')
+batch_var=tk.StringVar(value='Batch: '+BATCH_ID)
+path_var=tk.StringVar(value='Excel: '+str(workbook_path(DATA_DIR)))
+ttk.Label(frm,textvariable=batch_var,foreground='#205b96').grid(row=6,column=2,columnspan=2,sticky='e')
+ttk.Label(frm,textvariable=path_var,wraplength=980).grid(row=11,column=0,columnspan=4,sticky='w')
 ttk.Button(frm,text='Import legacy CSV (optional, one time)',command=import_old_records).grid(row=12,column=0,columnspan=3,sticky='w',pady=3)
+
+def start_new_batch():
+    global BATCH_ID, DATA_DIR
+    if state['busy']:
+        messagebox.showwarning('Busy', 'Finish the current operation before changing batch.');return
+    batch_id=simpledialog.askstring('New Batch / Reset IP Allocation',
+        'New Batch ID (letters/numbers/_/-):\nEach batch has independent .121–.130 allocations and test history.', parent=root)
+    if batch_id is None:return
+    if not operator_var.get().strip():
+        messagebox.showerror('Operator required', 'Enter Operator first.');return
+    if not messagebox.askyesno('CONFIRM IP REUSE / NEW BATCH',
+        'Start a NEW batch and reset this batch\'s .121–.130 allocation list?\n\n'
+        'Previous batch records will NOT be deleted.\n'
+        'Finish all prior-batch Default Verification BEFORE switching; linking is within one batch.\n\n'
+        'IMPORTANT: Confirm all previous batch DUTs have been RESTORED or DISCONNECTED '
+        'from the test network. Reusing live IPs can cause a collision.\n\nProceed?', parent=root):return
+    try:
+        target=new_batch(RECORDS_ROOT,batch_id,operator_var.get(),physical_network_released=True)
+    except Exception as exc:
+        messagebox.showerror('New batch blocked',str(exc),parent=root);return
+    # Clear old session to prevent a WAN write against a now different ledger.
+    if state['session']:
+        state['session'].close()
+    state.update(session=None,comparison=None,last_apply=False)
+    BATCH_ID,DATA_DIR=active_batch(RECORDS_ROOT)
+    batch_var.set('Batch: '+BATCH_ID)
+    path_var.set('Excel: '+str(workbook_path(DATA_DIR)))
+    mac_ent.delete(0,'end');gpon_ent.delete(0,'end')
+    ip_var.set(ip_choices[0]);refresh_allocation();mac_ent.focus_set()
+    show_result('NOT TESTED')
+    log('NEW BATCH: '+BATCH_ID+' | new independent IP pool .121–.130 | Excel: '+str(workbook_path(DATA_DIR)))
+    messagebox.showinfo('New Batch created','Batch: '+BATCH_ID+'\nIP pool reset for this batch.\nPrior batch records are preserved.\n'+str(target),parent=root)
+
+newbatchbtn=ttk.Button(frm,text='New Batch / Reset IP Allocation',command=start_new_batch)
+newbatchbtn.grid(row=12,column=3,sticky='e',pady=3)
 
 text=tk.Text(frm,width=135,height=26,font=('Consolas',10));text.grid(row=13,column=0,columnspan=4,sticky='nsew',pady=10)
 frm.rowconfigure(13,weight=1);frm.columnconfigure(2,weight=1)

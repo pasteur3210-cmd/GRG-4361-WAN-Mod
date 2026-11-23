@@ -6,7 +6,7 @@ def test_release_version_consistency():
     spec = (root / "GRG4361_WAN.spec").read_text(encoding="utf-8")
     main = (root / "main.py").read_text(encoding="utf-8")
     workflow = (root / ".github/workflows/build.yml").read_text(encoding="utf-8")
-    version = "V1.1.3"
+    version = "V1.1.4"
     assert f"name='GRG4361_WAN_Setting_{version}'" in spec
     assert f"WAN Setting Tool {version}" in main
     assert f"name: GRG4361_WAN_Setting_{version}" in workflow
